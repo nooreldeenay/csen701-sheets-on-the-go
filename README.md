@@ -1,16 +1,58 @@
-# React + Vite
+# 🟩 CSEN701: Sheet-On-The-Go
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> **System Status**: ONLINE  
+> **Kernel**: REACT V19  
+> **Visuals**: RETRO_TERMINAL_V1  
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 📟 Overview
 
-## React Compiler
+**Sheet-On-The-Go** is a retro-futuristic cheatsheet builder designed for CSEN701 students. Immerse yourself in a terminal-inspired environment where you can compile, merge, and export your study notes with hacker-like efficiency.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The interface combines modern web technologies with a nostalgic 90s cyberpunk aesthetic, complete with CRT scanlines, typewriter effects, and a command-line boot sequence.
 
-## Expanding the ESLint configuration
+## ✨ Features
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- **🖥️ Retro Boot Sequence**: Experience a full BIOS-style startup with integrity checks, memory verification, and system initialization.
+- **🎓 Interactive Tutorials**: Guided `TUTORIAL_GUIDE_V1.0` walks you through the system's capabilities step-by-step.
+- **🧩 Dynamic Sheet Building**: 
+  - Manage "Nodes" and "Code Blocks" via a file-system-like sidebar.
+  - Toggle selections to customize your output.
+  - "Merge Mode" allows combining multiple resources into a single view.
+- **👁️ Live Preview**: Watch your sheet compile in real-time on the right-hand inspection panel.
+- **📄 PDF Export**: Generate print-ready documents for your exams or archives with a single click.
+
+## 🛠️ Tech Stack
+
+- **Core**: React 19 + Vite (Fast HMR & Building)
+- **Styling**: TailwindCSS 4 (Utility-first retro styling)
+- **Math**: KaTeX (For beautiful mathematical formula rendering)
+- **Icons**: Lucide React (Pixel-perfect scalable icons)
+
+## 🚀 Initialization (Getting Started)
+
+### 1. Clone the Matrix
+```bash
+git clone https://github.com/nooreldeenay/csen701-sheet-on-the-go.git
+cd csen701-sheet-on-the-go
+```
+
+### 2. Install Subsystems
+```bash
+npm install
+```
+
+### 3. Boot System (Dev Server)
+```bash
+npm run dev
+```
+*Access the terminal at `http://localhost:5173`*
+
+### 4. Build Distribution
+```bash
+npm run build
+```
+
+---
+*Created by [Nooreldeenay](https://github.com/nooreldeenay)*
