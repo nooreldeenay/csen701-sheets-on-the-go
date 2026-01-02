@@ -9,15 +9,15 @@ const ModuleItem = ({ item }) => {
     const fontSize = item.weight || 10;
 
     return (
-        <div className="mb-1 border border-slate-200 rounded p-[2px] break-inside-avoid bg-white" >
-            <div className="font-bold text-slate-700 border-b border-slate-100 mb-0.5 flex justify-between items-center bg-slate-50 px-1">
+        <div className="mb-1 rounded p-[1px] break-inside-avoid" >
+            <div className="font-bold text-slate-900 mb-0.5 flex justify-between items-baseline px-0.5 border-b border-slate-200">
                 <span className="text-[9px] leading-tight">{item.title}</span>
-                <span className="text-[7px] text-slate-400 font-normal truncate max-w-[40px]">{item.parentTitle}</span>
+                <span className="text-[7px] text-slate-400 font-normal truncate max-w-[40px] ml-1">{item.parentTitle}</span>
             </div>
 
-            <div className="module-content overflow-hidden px-1" style={{ fontSize: `${fontSize}px` }}>
+            <div className="module-content overflow-hidden px-0.5" style={{ fontSize: `${fontSize}px` }}>
                 {item.type === 'text' && (
-                    <div className="whitespace-pre-wrap font-serif leading-tight text-slate-800" style={{ fontSize: '1em' }}>
+                    <div className="whitespace-pre-wrap font-serif leading-tight text-slate-900" style={{ fontSize: '1em' }}>
                         {item.content}
                     </div>
                 )}
@@ -40,8 +40,18 @@ const ModuleItem = ({ item }) => {
                 )}
 
                 {item.type === 'code' && (
-                    <div className="bg-slate-50 p-0.5 rounded font-mono whitespace-pre overflow-x-auto leading-tight" style={{ fontSize: '0.9em' }}>
+                    <div className="font-mono text-slate-800 break-all whitespace-pre-wrap leading-tight border-l-2 border-slate-300 pl-1" style={{ fontSize: '0.9em' }}>
                         {item.content}
+                    </div>
+                )}
+
+                {item.type === 'row' && (
+                    <div className="flex gap-2">
+                        {item.content.map((subItem, idx) => (
+                            <div key={idx} className="flex-1 min-w-0">
+                                <ModuleItem item={{ ...subItem, weight: item.weight }} />
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>
@@ -56,12 +66,8 @@ const A4Page = ({ pageNumber, columns }) => {
             <div className="absolute inset-0 pointer-events-none border border-red-500/0 group-hover:border-red-500/20 transition-colors z-50 print:hidden" />
 
             {/* Page Content */}
-            <div className="flex-1 p-[3mm] text-slate-900">
-                <h3 className="font-bold text-[10px] mb-1 text-center border-b border-slate-300 pb-0.5 uppercase tracking-widest text-slate-500">
-                    CSEN701 Cheatsheet <span className="mx-1">•</span> Page {pageNumber}
-                </h3>
-
-                <div className="grid grid-cols-2 gap-1.5 h-full items-start">
+            <div className="flex-1 p-[4mm] text-slate-900">
+                <div className="grid grid-cols-2 gap-2 h-full items-start">
                     {/* Column 1 */}
                     <div className="h-full flex flex-col">
                         {columns[0].map((item, i) => (
@@ -79,19 +85,34 @@ const A4Page = ({ pageNumber, columns }) => {
             </div>
 
             {/* Footer */}
-            <div className="absolute bottom-1 right-2 text-[6px] text-slate-300 font-mono">
-                {pageNumber}
+            <div className="absolute bottom-1 w-full px-4 flex justify-between items-end border-t border-slate-100 pt-0.5">
+                <span className="text-[8px] text-slate-400 uppercase tracking-widest font-bold">CSEN701 Cheatsheet</span>
+                <span className="text-[8px] text-slate-400 font-mono">{pageNumber}</span>
             </div>
         </div>
     );
 };
 
 const SheetPreview = () => {
-    const { modules, selectedItems, weights } = useSheet();
+    const { modules, customModules, selectedItems, weights } = useSheet();
 
     const { pages, overflow } = useMemo(() => {
-        return calculateLayout(modules, selectedItems, weights);
-    }, [modules, selectedItems, weights]);
+        // Merge standard modules with a virtual "Custom" module group containing user items
+        // But since calculateLayout expects a list of modules where each has a list of submodules...
+        // We can just append the customModules as individual items if we wrap them or structure them.
+
+        // Let's create a virtual module for Custom items
+        const allModules = [...modules];
+        if (customModules.length > 0) {
+            allModules.push({
+                id: 'custom-group',
+                title: 'Custom Items',
+                submodules: customModules
+            });
+        }
+
+        return calculateLayout(allModules, selectedItems, weights);
+    }, [modules, customModules, selectedItems, weights]);
 
     // Handle Print
     const handlePrint = () => {

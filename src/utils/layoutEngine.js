@@ -10,7 +10,6 @@ const SAFE_HEIGHT = 1050;
 const COL_WIDTH_MM = 90; // Approx
 
 // Estimate height of a module
-// Estimate height of a module
 const estimateHeight = (submodule, fontSize = 10) => {
     // scale relative to default 10px
     const scale = fontSize / 10;
@@ -18,21 +17,28 @@ const estimateHeight = (submodule, fontSize = 10) => {
     let baseHeight = 40; // Title + Padding (approx constant)
 
     if (submodule.type === 'text') {
-        // Rough estimate: 1 line = 20px at 10px font. 
-        // 50 chars per line at 10px. 
-        // If font implies larger width, fewer chars per line.
-        // Let's approximate: line height scales with font size.
         const charsPerLine = Math.floor(50 / scale);
         const lines = Math.ceil(submodule.content.length / Math.max(1, charsPerLine));
         baseHeight += lines * (14 * scale);
     } else if (submodule.type === 'image') {
-        // Image height we set to fontSize * 15 in render
         baseHeight += (fontSize * 15);
     } else if (submodule.type === 'formula') {
         baseHeight += 60 * scale;
     } else if (submodule.type === 'code') {
         const lines = submodule.content.split('\n').length;
         baseHeight += lines * (16 * scale);
+    } else if (submodule.type === 'row') {
+        // Estimate height of a row container
+        const numItems = submodule.content.length || 1;
+        const widthFactor = numItems;
+        const heights = submodule.content.map(subItem => {
+            let h = estimateHeight(subItem, fontSize);
+            if (subItem.type === 'text' || subItem.type === 'code') {
+                h = h * 0.8 * widthFactor;
+            }
+            return h;
+        });
+        baseHeight = Math.max(...heights, 20);
     }
 
     return baseHeight;
@@ -43,21 +49,31 @@ export const calculateLayout = (modules, selectedIds, weights) => {
     const selectedItems = [];
 
     modules.forEach(mod => {
-        mod.submodules.forEach(sub => {
-            if (selectedIds.has(sub.id)) {
-                selectedItems.push({
-                    ...sub,
-                    parentTitle: mod.title,
-                    weight: weights[sub.id] || 10,
-                    estimatedHeight: estimateHeight(sub, weights[sub.id] || 10)
-                });
-            }
-        });
+        // Check if submodule is the group OR if it's a standard one
+        // Standard modules have submodules array
+        if (mod.submodules) {
+            mod.submodules.forEach(sub => {
+                if (selectedIds.has(sub.id)) {
+                    selectedItems.push({
+                        ...sub,
+                        parentTitle: mod.title,
+                        weight: weights[sub.id] || 10,
+                        estimatedHeight: estimateHeight(sub, weights[sub.id] || 10)
+                    });
+                }
+            });
+        }
+        // Logic for flattened custom modules passed as "modules" but missing submodules property?
+        // In SheetPreview we pass: create virtual module for custom items.
+        // Virtual module structure: { id, title, submodules: customModules }
+        // So the loop above handles it correctly IF structure is respected.
+        else {
+            // Fallback if top-level structure is mixed (unlikely given SheetPreview)
+        }
+
     });
 
-    // 2. Simple Bin Packing (First Fit Decreasing or just strictly sequential for order preservation?)
-    // User probably wants order preserved (Lec 1 then Lec 2). So sequential.
-
+    // 2. Simple Bin Packing (Sequential)
     const pages = [
         { id: 1, columns: [[], []], currentColsH: [0, 0] },
         { id: 2, columns: [[], []], currentColsH: [0, 0] }
@@ -96,7 +112,7 @@ export const calculateLayout = (modules, selectedIds, weights) => {
                 }
             }
 
-            // Add to new column (assuming it fits on empty column, if not, it's too big, but we add it anyway effectively overflow visual)
+            // Add to new column
             page.columns[currentColIdx].push(item);
             page.currentColsH[currentColIdx] += item.estimatedHeight;
         }
