@@ -1,21 +1,26 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useLayoutEffect, useRef } from 'react';
 import { useSheet } from '../context/SheetContext';
 import { useTutorial } from '../context/TutorialContext';
 import { calculateLayout } from '../utils/layoutEngine';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 
-const ModuleItem = ({ item }) => {
+const ModuleItem = ({ item, compact = false }) => {
     // item.weight is now treated as font-size in px. Default to 10px if not set.
     const fontSize = item.weight || 10;
 
     return (
-        <div className="mb-1 rounded p-[1px] break-inside-avoid" >
-            <div className="font-bold text-slate-900 mb-0.5 flex justify-between items-baseline px-0.5 border-b border-slate-200">
-                <span className="text-[9px] leading-tight">{item.title}</span>
-                <span className="text-[7px] text-slate-400 font-normal truncate max-w-[40px] ml-1">{item.parentTitle}</span>
-            </div>
+        <div
+            className="mb-px rounded p-px break-inside-avoid"
+            style={{ pageBreakInside: 'avoid', breakInside: 'avoid-column' }}
+        >
+            {!compact && (
+                <div className="font-bold text-slate-900 mb-0 flex justify-between items-baseline px-0.5 border-b border-slate-200">
+                    <span className="text-[8px] leading-tight">{item.title}</span>
+                    <span className="text-[7px] text-slate-400 font-normal truncate max-w-[60px] ml-1">{item.parentTitle}</span>
+                </div>
+            )}
 
             <div className="module-content overflow-hidden px-0.5" style={{ fontSize: `${fontSize}px` }}>
                 {item.type === 'text' && (
@@ -51,7 +56,7 @@ const ModuleItem = ({ item }) => {
                     <div className="flex gap-2">
                         {item.content.map((subItem, idx) => (
                             <div key={idx} className="flex-1 min-w-0">
-                                <ModuleItem item={{ ...subItem, weight: item.weight }} />
+                                <ModuleItem item={{ ...subItem, weight: item.weight }} compact={true} />
                             </div>
                         ))}
                     </div>
@@ -61,28 +66,32 @@ const ModuleItem = ({ item }) => {
     )
 }
 
-const A4Page = ({ pageNumber, columns, sheetName }) => {
+const A4Page = ({ pageNumber, items, sheetName }) => {
     return (
-        <div id={`page-${pageNumber}`} className="bg-white w-[210mm] h-[297mm] shadow-[0_0_20px_rgba(0,0,0,0.5)] relative mx-auto mb-16 transition-all duration-300 origin-top flex flex-col overflow-hidden group print:shadow-none print:mb-0 print:w-full print:h-full">
+        <div
+            id={`page-${pageNumber}`}
+            className="bg-white w-[210mm] h-[297mm] shadow-[0_0_20px_rgba(0,0,0,0.5)] relative mx-auto mb-16 transition-all duration-300 origin-top flex flex-col group print:overflow-hidden print:shadow-none print:mb-0 print:mx-0 print:page-break-after-always"
+            style={{ pageBreakAfter: 'always', breakAfter: 'page' }}
+        >
             {/* Helper Grid Overlay (Hover only) */}
             <div className="absolute inset-0 pointer-events-none border border-red-500/0 group-hover:border-red-500/20 transition-colors z-50 print:hidden" />
 
             {/* Page Content */}
-            <div className="flex-1 p-[4mm] text-slate-900">
-                <div className="grid grid-cols-2 gap-2 h-full items-start">
-                    {/* Column 1 */}
-                    <div className="h-full flex flex-col">
-                        {columns[0].map((item, i) => (
-                            <ModuleItem key={`${item.id}-col1-${i}`} item={item} />
-                        ))}
-                    </div>
-
-                    {/* Column 2 */}
-                    <div className="h-full flex flex-col">
-                        {columns[1].map((item, i) => (
-                            <ModuleItem key={`${item.id}-col2-${i}`} item={item} />
-                        ))}
-                    </div>
+            <div
+                className="flex-1 p-[1.5mm] text-slate-900 overflow-hidden print:p-[1.5mm] print:h-[290mm] print:overflow-hidden"
+                style={{ maxHeight: 'calc(297mm - 6mm)' }}
+            >
+                <div
+                    className="columns-2 gap-[1mm] h-full"
+                    style={{
+                        columnFill: 'auto',
+                        columnGap: '1mm',
+                        height: '100%'
+                    }}
+                >
+                    {items.map((item, i) => (
+                        <ModuleItem key={`${item.id}-${i}`} item={item} />
+                    ))}
                 </div>
             </div>
 
@@ -95,33 +104,92 @@ const A4Page = ({ pageNumber, columns, sheetName }) => {
     );
 };
 
+const OverflowSection = ({ items }) => {
+    if (items.length === 0) return null;
+    return (
+        <div className="mt-16 p-8 border border-dashed border-red-900 bg-red-950/10 relative print:hidden">
+            <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-6 border-b border-red-900/50 pb-4">
+                    <div className="bg-red-600 text-white px-3 py-1 font-bold text-xl font-mono">!</div>
+                    <div>
+                        <h2 className="text-red-500 font-bold text-lg leading-tight uppercase tracking-widest font-mono">BUFFER_OVERFLOW_DETECTED</h2>
+                        <p className="text-red-400/70 text-[10px] font-mono uppercase tracking-tighter">These units have been dropped from the primary 2-page memory sequence.</p>
+                    </div>
+                </div>
+                <div className="columns-2 gap-6 space-y-4">
+                    {items.map((item, i) => (
+                        <div key={i} className="bg-white p-1 border border-slate-200 shadow-[2px_2px_0px_rgba(153,27,27,0.2)] break-inside-avoid">
+                            <ModuleItem item={item} />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Hidden container to measure exact heights of modules
+const MeasurementContainer = ({ items, onMeasure }) => {
+    const containerRef = useRef(null);
+
+    useLayoutEffect(() => {
+        if (!containerRef.current) return;
+
+        const measure = () => {
+            const newHeights = {};
+            const nodes = containerRef.current.children;
+
+            for (let i = 0; i < nodes.length; i++) {
+                const node = nodes[i];
+                const id = node.dataset.id;
+                if (id) {
+                    // Get height including margin (mb-px)
+                    // mb-px is 1px.
+                    const rect = node.getBoundingClientRect();
+                    // We add a small buffer (2px) to be safe against sub-pixel rounding and margins
+                    newHeights[id] = rect.height + 2;
+                }
+            }
+            onMeasure(newHeights);
+        };
+
+        // Small delay to ensure images/fonts load? 
+        // For now, sync measurement.
+        measure();
+
+    }, [items, onMeasure]);
+
+    // Width must match the column width of the A4 page exactly.
+    // A4 Page width = 210mm
+    // Padding = 1.5mm * 2 = 3mm
+    // Content width = 207mm
+    // 2 Columns with 1mm gap -> (207 - 1) / 2 = 103mm
+    return (
+        <div
+            ref={containerRef}
+            className="fixed top-0 left-0 -z-50 opacity-0 pointer-events-none bg-white text-slate-900"
+            style={{
+                width: '103mm',
+                visibility: 'hidden',
+                position: 'fixed'
+            }}
+        >
+            {items.map((item, i) => (
+                <div key={`${item.id}-measure`} data-id={item.id}>
+                    <ModuleItem item={item} />
+                </div>
+            ))}
+        </div>
+    );
+};
+
 const SheetPreview = () => {
-    const { modules, customModules, selectedItems, weights, sheetName, isGroupingMode, setHighlightNameInput, tutorialData } = useSheet();
+    const { sheetName, isGroupingMode, setHighlightNameInput, pages, overflow, itemsToMeasure, updateMeasuredHeights } = useSheet();
     const { showPreview } = useTutorial();
-    const [showTooltip, setShowTooltip] = useState(false); // Add state
+    const [showTooltip, setShowTooltip] = useState(false);
 
-    const { pages, overflow } = useMemo(() => {
-        // Let's create a virtual module for Custom items
-        const allModules = [...modules];
-        if (customModules.length > 0) {
-            allModules.push({
-                id: 'custom-group',
-                title: 'Custom Items',
-                submodules: customModules
-            });
-        }
-
-        // Inject Tutorial Data if present
-        if (tutorialData && tutorialData.length > 0) {
-            allModules.push({
-                id: 'tutorial-group',
-                title: 'Tutorial Basics',
-                submodules: tutorialData
-            });
-        }
-
-        return calculateLayout(allModules, selectedItems, weights);
-    }, [modules, customModules, tutorialData, selectedItems, weights]);
+    // DEBUG: Monitor layout flow
+    console.log(`[PREVIEW] P1:${pages[0].items.length} P2:${pages[1].items.length} OVER:${overflow.length}`);
 
     // Handle Print
     const handlePrint = () => {
@@ -153,7 +221,7 @@ const SheetPreview = () => {
                             <span className="font-bold text-xl">!</span>
                         </div>
                         <div>
-                            <h3 className="font-bold uppercase tracking-wider text-purple-300">>> MERGE_MODE_ENGAGED</h3>
+                            <h3 className="font-bold uppercase tracking-wider text-purple-300">{">> "} MERGE_MODE_ENGAGED</h3>
                             <p className="text-xs font-mono text-purple-200">Select items from control panel to fuse.</p>
                         </div>
                     </div>
@@ -202,7 +270,7 @@ const SheetPreview = () => {
                         {/* Tooltip */}
                         {showTooltip && (
                             <div className="absolute top-full right-0 mt-2 w-48 bg-black border border-orange-500 text-orange-500 text-xs p-2 shadow-lg z-50">
-                                <p className="font-bold">>> ERROR: NAME_MISSING</p>
+                                <p className="font-bold">{">> "} ERROR: NAME_MISSING</p>
                                 <p>Please name your sheet in the sidebar to proceed.</p>
                             </div>
                         )}
@@ -211,13 +279,22 @@ const SheetPreview = () => {
 
                 <div className="print-area drop-shadow-2xl">
                     {/* Page 1 */}
-                    <A4Page pageNumber={1} columns={pages[0].columns} sheetName={sheetName} />
+                    <A4Page pageNumber={1} items={pages[0].items} sheetName={sheetName} />
 
                     {/* Page 2 */}
-                    <A4Page pageNumber={2} columns={pages[1].columns} sheetName={sheetName} />
+                    <A4Page pageNumber={2} items={pages[1].items} sheetName={sheetName} />
+
+                    {/* Overflow Section */}
+                    <OverflowSection items={overflow} />
                 </div>
             </div>
-        </main>
+
+
+            {/* Hidden Measurement Layer */}
+            {itemsToMeasure && itemsToMeasure.length > 0 && (
+                <MeasurementContainer items={itemsToMeasure} onMeasure={updateMeasuredHeights} />
+            )}
+        </main >
     );
 };
 

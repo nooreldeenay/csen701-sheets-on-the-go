@@ -6,117 +6,132 @@
 
 const COLUMNS_PER_PAGE = 2; // 2 columns
 const PAGE_HEIGHT_PX = 1122; // A4 @ 96 DPI (approx). Let's be conservative: 1000px safe area.
-const SAFE_HEIGHT = 1050;
-const COL_WIDTH_MM = 90; // Approx
+const SAFE_HEIGHT = 1085; // ~287mm (297mm - 3mm padding - margins). Prevents "3rd column" overflow.
 
 // Estimate height of a module
 const estimateHeight = (submodule, fontSize = 10) => {
     // scale relative to default 10px
     const scale = fontSize / 10;
 
-    let baseHeight = 40; // Title + Padding (approx constant)
+    let baseHeight = 14; // Safer overhead to prevent column overflow
 
     if (submodule.type === 'text') {
-        const charsPerLine = Math.floor(50 / scale);
+        const charsPerLine = Math.floor(55 / scale); // Conservative wrapping
         const lines = Math.ceil(submodule.content.length / Math.max(1, charsPerLine));
-        baseHeight += lines * (14 * scale);
+        baseHeight += lines * (13 * scale); // Taller lines
     } else if (submodule.type === 'image') {
-        baseHeight += (fontSize * 15);
+        baseHeight += (fontSize * 16);
     } else if (submodule.type === 'formula') {
-        baseHeight += 60 * scale;
+        baseHeight += 38 * scale;
     } else if (submodule.type === 'code') {
         const lines = submodule.content.split('\n').length;
-        baseHeight += lines * (16 * scale);
+        baseHeight += lines * (13 * scale); // Safer code block height
     } else if (submodule.type === 'row') {
         // Estimate height of a row container
         const numItems = submodule.content.length || 1;
         const widthFactor = numItems;
         const heights = submodule.content.map(subItem => {
+            // When in a row, width is divided, so height increases for text/code
             let h = estimateHeight(subItem, fontSize);
             if (subItem.type === 'text' || subItem.type === 'code') {
-                h = h * 0.8 * widthFactor;
+                // Width factor adjustment
+                h = h * (0.8 * widthFactor);
             }
             return h;
         });
-        baseHeight = Math.max(...heights, 20);
+        baseHeight = Math.max(...heights, 18);
     }
 
     return baseHeight;
 };
 
-export const calculateLayout = (modules, selectedIds, weights) => {
-    // 1. Flatten selected submodules
+export const getFlattenedItems = (modules, selectedIds, weights) => {
     const selectedItems = [];
 
     modules.forEach(mod => {
-        // Check if submodule is the group OR if it's a standard one
-        // Standard modules have submodules array
         if (mod.submodules) {
             mod.submodules.forEach(sub => {
                 if (selectedIds.has(sub.id)) {
+                    // Simplify parent title
+                    let conciseParent = (sub.parentTitle || mod.title).split(' - ')[0];
+                    const isTutorial = (mod.title || "").toLowerCase().includes('tutorial');
+                    const isLecture = (mod.title || "").toLowerCase().includes('lecture');
+                    const prefix = isTutorial ? 'T' : (isLecture ? 'L' : '');
+
+                    conciseParent = conciseParent
+                        .replace(/T\/L\s+/i, prefix)
+                        .replace(/Tutorial\s+/i, 'T')
+                        .replace(/Lecture\s+/i, 'L')
+                        .replace(/Tut\s+/i, 'T')
+                        .replace(/Lec\s+/i, 'L')
+                        .trim();
+
                     selectedItems.push({
                         ...sub,
-                        parentTitle: mod.title,
-                        weight: weights[sub.id] || 10,
-                        estimatedHeight: estimateHeight(sub, weights[sub.id] || 10)
+                        parentTitle: conciseParent,
+                        weight: weights[sub.id] || 10
                     });
                 }
             });
         }
-        // Logic for flattened custom modules passed as "modules" but missing submodules property?
-        // In SheetPreview we pass: create virtual module for custom items.
-        // Virtual module structure: { id, title, submodules: customModules }
-        // So the loop above handles it correctly IF structure is respected.
-        else {
-            // Fallback if top-level structure is mixed (unlikely given SheetPreview)
-        }
-
     });
+    return selectedItems;
+};
 
-    // 2. Simple Bin Packing (Sequential)
-    const pages = [
-        { id: 1, columns: [[], []], currentColsH: [0, 0] },
-        { id: 2, columns: [[], []], currentColsH: [0, 0] }
-    ];
+export const calculateLayout = (modules, selectedIds, weights, measuredHeights = {}) => {
+    // 1. Flatten selected submodules
+    // Note: We used to do this here, but now we assume we might want them separate. 
+    // Actually, let's reuse the helper for consistency, OR expect the caller to pass flattened items?
+    // To keep API simple, we'll call the helper, but then map estimateHeight on top.
 
+    const baseItems = getFlattenedItems(modules, selectedIds, weights);
+
+    // 2. Add Heights
+    const sizedItems = baseItems.map(item => ({
+        ...item,
+        estimatedHeight: measuredHeights[item.id]
+            ? measuredHeights[item.id]
+            : estimateHeight(item, item.weight)
+    }));
+
+    // 3. First Fit Decreasing (FFD) Packing
+    // Sort items by height descending
+    const sortedItems = [...sizedItems].sort((a, b) => b.estimatedHeight - a.estimatedHeight);
+
+    // Define 4 discrete columns (Bin Packing)
+    // 2 Pages * 2 Columns/Page = 4 Columns
+    const MAX_COLS = 4;
+    const columns = Array(MAX_COLS).fill(null).map(() => ({
+        currentH: 0,
+        items: []
+    }));
     const overflow = [];
 
-    let currentPageIdx = 0;
-    let currentColIdx = 0;
-
-    selectedItems.forEach(item => {
-        // Try to fit in current column
-        let page = pages[currentPageIdx];
-
-        if (!page) {
-            overflow.push(item);
-            return;
+    sortedItems.forEach(item => {
+        let placed = false;
+        // Try to fit in the first available column bin (First Fit)
+        // This naturally fills earlier gaps because we process columns 0..3 for every item.
+        for (let c = 0; c < MAX_COLS; c++) {
+            if (columns[c].currentH + item.estimatedHeight <= SAFE_HEIGHT) {
+                columns[c].items.push(item);
+                columns[c].currentH += item.estimatedHeight;
+                placed = true;
+                break;
+            }
         }
 
-        // Check if fits in current column
-        if (page.currentColsH[currentColIdx] + item.estimatedHeight <= SAFE_HEIGHT) {
-            page.columns[currentColIdx].push(item);
-            page.currentColsH[currentColIdx] += item.estimatedHeight;
-        } else {
-            // Try next column
-            currentColIdx++;
-            if (currentColIdx >= COLUMNS_PER_PAGE) {
-                // Next Page
-                currentColIdx = 0;
-                currentPageIdx++;
-                page = pages[currentPageIdx];
-
-                if (!page) {
-                    overflow.push(item);
-                    return;
-                }
-            }
-
-            // Add to new column
-            page.columns[currentColIdx].push(item);
-            page.currentColsH[currentColIdx] += item.estimatedHeight;
+        if (!placed) {
+            overflow.push({ ...item, isOverflow: true });
         }
     });
+
+    // 3. Reconstruct Pages
+    // Page 1 contains items from Col 0 and Col 1
+    // Page 2 contains items from Col 2 and Col 3
+    const pages = [
+        { id: 1, items: [...columns[0].items, ...columns[1].items] },
+        { id: 2, items: [...columns[2].items, ...columns[3].items] }
+    ];
 
     return { pages, overflow };
 };

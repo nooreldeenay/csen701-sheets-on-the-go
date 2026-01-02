@@ -2,6 +2,8 @@
 import React, { createContext, useContext, useState, useMemo } from 'react';
 import { modules } from '../data/modules';
 
+import { calculateLayout, getFlattenedItems } from '../utils/layoutEngine';
+
 const SheetContext = createContext();
 
 export const SheetProvider = ({ children }) => {
@@ -59,6 +61,24 @@ export const SheetProvider = ({ children }) => {
     // Sheet Metadata
     const [sheetName, setSheetName] = useState("");
     const [highlightNameInput, setHighlightNameInput] = useState(false);
+
+    // Exact Height Measurement
+    const [measuredHeights, setMeasuredHeights] = useState({});
+
+    const updateMeasuredHeights = React.useCallback((newHeights) => {
+        setMeasuredHeights(prev => {
+            // Only update if actually different to prevent infinite loops
+            let hasChange = false;
+            for (const [id, h] of Object.entries(newHeights)) {
+                if (prev[id] !== h) {
+                    hasChange = true;
+                    break;
+                }
+            }
+            if (!hasChange && Object.keys(newHeights).length === Object.keys(prev).length) return prev;
+            return { ...prev, ...newHeights };
+        });
+    }, []);
 
     // Grouping Mode State
     const [isGroupingMode, setIsGroupingMode] = useState(false);
@@ -144,6 +164,46 @@ export const SheetProvider = ({ children }) => {
     // Tutorial Data Injection
     const [tutorialData, setTutorialData] = useState([]);
 
+    // List of items to measure (independent of layout/measured heights)
+    const itemsToMeasure = useMemo(() => {
+        const allModules = [...modules];
+        if (customModules.length > 0) {
+            allModules.push({
+                id: 'custom-group',
+                title: 'Custom Items',
+                submodules: customModules
+            });
+        }
+        if (tutorialData.length > 0) {
+            allModules.push({
+                id: 'tutorial-group',
+                title: 'Tutorial Basics',
+                submodules: tutorialData
+            });
+        }
+        return getFlattenedItems(allModules, selectedItems, weights);
+    }, [modules, customModules, tutorialData, selectedItems, weights]);
+
+    // Calculate Layout
+    const layout = useMemo(() => {
+        const allModules = [...modules];
+        if (customModules.length > 0) {
+            allModules.push({
+                id: 'custom-group',
+                title: 'Custom Items',
+                submodules: customModules
+            });
+        }
+        if (tutorialData.length > 0) {
+            allModules.push({
+                id: 'tutorial-group',
+                title: 'Tutorial Basics',
+                submodules: tutorialData
+            });
+        }
+        return calculateLayout(allModules, selectedItems, weights, measuredHeights);
+    }, [modules, customModules, tutorialData, selectedItems, weights, measuredHeights]);
+
     const value = useMemo(() => ({
         modules,
         customModules,
@@ -164,8 +224,12 @@ export const SheetProvider = ({ children }) => {
         createGroupFromSelection,
         lastCreatedGroupId,
         sheetName, setSheetName,
-        highlightNameInput, setHighlightNameInput
-    }), [selectedItems, weights, customModules, isGroupingMode, groupingSet, lastCreatedGroupId, sheetName, highlightNameInput, tutorialData]);
+        highlightNameInput, setHighlightNameInput,
+        measuredHeights, updateMeasuredHeights, // Measurements
+        pages: layout.pages,
+        overflow: layout.overflow,
+        itemsToMeasure
+    }), [selectedItems, weights, customModules, isGroupingMode, groupingSet, lastCreatedGroupId, sheetName, highlightNameInput, tutorialData, layout, measuredHeights, itemsToMeasure]);
 
     return (
         <SheetContext.Provider value={value}>

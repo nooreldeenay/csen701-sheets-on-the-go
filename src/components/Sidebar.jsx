@@ -5,12 +5,13 @@ import { useSheet } from '../context/SheetContext';
 
 import { useTutorial } from '../context/TutorialContext';
 
-const Sidebar = () => {
+const Sidebar = ({ onOpenAbout }) => {
     const {
         modules, customModules, selectedItems, toggleSelection, toggleModuleSelection, weights, updateWeight,
         addCustomModule, removeCustomModule, updateCustomModule,
         isGroupingMode, groupingSet, toggleGroupingMode, toggleOptionInGroup, createGroupFromSelection,
-        lastCreatedGroupId, sheetName, setSheetName, highlightNameInput, setTutorialData
+        lastCreatedGroupId, sheetName, setSheetName, highlightNameInput, setTutorialData,
+        overflow
     } = useSheet();
     const { sidebarMode, tutorialStep, setTutorialStep, handleTutorialAction } = useTutorial();
     const [expanded, setExpanded] = React.useState({});
@@ -161,6 +162,14 @@ const Sidebar = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-3 space-y-4 scrollbar-thin">
+                {/* Automatic Ordering Warning */}
+                <div className="bg-yellow-900/20 border border-yellow-700/50 p-2 text-[9px] font-mono leading-tight flex items-start gap-2">
+                    <span className="text-yellow-500 font-bold">⚠️</span>
+                    <span className="text-yellow-200/70">
+                        <strong className="text-yellow-500 uppercase">Notice:</strong> MODULE ORDER IS AUTOMATICALLY CONTROLLED TO MAXIMIZE PAGE PACKING EFFICIENCY.
+                    </span>
+                </div>
+
                 {/* Custom Content Section - Show in FULL and PARTIAL modes */}
                 {(sidebarMode === 'FULL' || sidebarMode === 'PARTIAL') && (
                     <div className="border border-slate-700 bg-[#0e0e0e]">
@@ -178,9 +187,13 @@ const Sidebar = () => {
 
                         {expanded['custom'] && (
                             <div className="p-2 space-y-3 border-t border-slate-800">
+                                <div className="bg-orange-500/10 border border-orange-900/50 p-2 text-[9px] font-mono leading-tight">
+                                    <span className="text-orange-500 font-bold uppercase blink mr-1">[!] MEMORY_VOLATILE:</span>
+                                    <span className="text-slate-400">USER_DATA IS STORED IN RAM ONLY. SESSION WILL BE CLEARED ON EXIT.</span>
+                                </div>
 
                                 {/* Controls */}
-                                <div className="grid grid-cols-3 gap-2">
+                                <div className="grid grid-cols-4 gap-2">
                                     <button
                                         onClick={() => addCustomModule({
                                             id: `custom-${Date.now()}`,
@@ -224,6 +237,20 @@ const Sidebar = () => {
                                     <button
                                         onClick={() => addCustomModule({
                                             id: `custom-${Date.now()}`,
+                                            title: 'CODE_01',
+                                            type: 'code',
+                                            content: '// code here',
+                                            parentTitle: 'CUSTOM',
+                                            weight: 10
+                                        })}
+                                        className="bg-[#111] hover:bg-green-900/30 text-green-500 text-[9px] py-1 border border-green-900 hover:border-green-500 uppercase font-bold"
+                                    >
+                                        CODE
+                                    </button>
+
+                                    <button
+                                        onClick={() => addCustomModule({
+                                            id: `custom-${Date.now()}`,
                                             title: 'EQ_01',
                                             type: 'formula',
                                             content: 'x = y^2',
@@ -240,6 +267,7 @@ const Sidebar = () => {
                                 {customModules.map(item => (
                                     <div key={item.id} className={`flex flex-col gap-2 p-2 border transition-all
                                             ${item.id === lastCreatedGroupId ? 'border-purple-500 bg-purple-900/10' : 'border-slate-800 bg-[#111]'}
+                                            ${overflow?.some(o => o.id === item.id) ? 'animate-pulse-red' : ''}
                                         `}>
                                         <div className="flex items-start gap-2">
                                             {/* Checkbox */}
@@ -294,6 +322,15 @@ const Sidebar = () => {
                                                         value={item.content}
                                                         onChange={(e) => updateCustomModule(item.id, { content: e.target.value })}
                                                         rows={2}
+                                                    />
+                                                )}
+                                                {item.type === 'code' && (
+                                                    <textarea
+                                                        className="w-full bg-[#111] text-xs text-blue-300 border border-slate-800 p-2 font-mono focus:border-blue-500 focus:outline-none"
+                                                        value={item.content}
+                                                        onChange={(e) => updateCustomModule(item.id, { content: e.target.value })}
+                                                        rows={3}
+                                                        placeholder="// Code here"
                                                     />
                                                 )}
                                                 {item.type === 'formula' && (
@@ -351,10 +388,10 @@ const Sidebar = () => {
                                                 handleTutorialAction('SELECT_TUTORIAL_ITEM', Array.from(nextSelection));
                                             }
                                         }}
-                                        className="p-1 text-slate-600 hover:text-green-400 font-mono text-[10px]"
+                                        className={`p-1 font-mono text-[10px] transition-colors ${mod.submodules.every(sub => selectedItems.has(sub.id)) ? 'text-green-500 font-bold' : 'text-slate-600 hover:text-green-400'}`}
                                         title="TOGGLE_ALL"
                                     >
-                                        {mod.submodules.every(sub => selectedItems.has(sub.id)) ? '[*]' : '[_]'}
+                                        {mod.submodules.every(sub => selectedItems.has(sub.id)) ? '[#]' : '[_]'}
                                     </button>
                                 )}
                             </div>
@@ -379,6 +416,7 @@ const Sidebar = () => {
                                                         : (isSelected ? 'border-green-800 bg-green-900/10' : 'border-transparent hover:border-slate-800')
                                                     }
                             ${shouldPulse ? 'animate-pulse ring-1 ring-green-500 bg-green-900/20' : ''}
+                            ${overflow?.some(o => o.id === sub.id) ? 'animate-pulse-red' : ''}
                           `}
                                             >
                                                 <div className="flex items-start gap-2 cursor-pointer"
@@ -459,7 +497,12 @@ const Sidebar = () => {
                     <div>
                         <span className="text-green-500 font-bold">{selectedItems.size}</span> UNITS_ACTIVE
                     </div>
-                    <div>MEM_USAGE: LOW</div>
+                    <button
+                        onClick={onOpenAbout}
+                        className="hover:text-green-400 cursor-pointer transition-colors"
+                    >
+                        [ ABOUT_SYS ]
+                    </button>
                 </div>
             </div>
         </aside >
