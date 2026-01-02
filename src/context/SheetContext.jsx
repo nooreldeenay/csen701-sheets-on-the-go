@@ -10,6 +10,9 @@ export const SheetProvider = ({ children }) => {
     // Map of submodule ID -> weight (0.5, 1, 1.5, 2)
     const [weights, setWeights] = useState({});
 
+    // Custom user modules
+    const [customModules, setCustomModules] = useState([]);
+
     const toggleSelection = (id) => {
         setSelectedItems(prev => {
             const next = new Set(prev);
@@ -19,17 +22,41 @@ export const SheetProvider = ({ children }) => {
         });
     };
 
+    const toggleModuleSelection = (submoduleIds, shouldSelect) => {
+        setSelectedItems(prev => {
+            const next = new Set(prev);
+            submoduleIds.forEach(id => {
+                if (shouldSelect) next.add(id);
+                else next.delete(id);
+            });
+            return next;
+        });
+    };
+
+    const addCustomModule = (newModule) => {
+        setCustomModules(prev => [...prev, newModule]);
+    };
+
+    const updateCustomModule = (id, updates) => {
+        setCustomModules(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+    };
+
     const updateWeight = (id, weight) => {
         setWeights(prev => ({ ...prev, [id]: weight }));
     };
 
     const value = useMemo(() => ({
         modules,
+        customModules,
         selectedItems,
         weights,
         toggleSelection,
-        updateWeight
-    }), [selectedItems, weights]);
+        toggleModuleSelection,
+        updateWeight,
+        addCustomModule,
+        removeCustomModule,
+        updateCustomModule
+    }), [selectedItems, weights, customModules]);
 
     return (
         <SheetContext.Provider value={value}>
