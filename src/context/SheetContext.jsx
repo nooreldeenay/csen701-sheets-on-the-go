@@ -37,6 +37,16 @@ export const SheetProvider = ({ children }) => {
         setCustomModules(prev => [...prev, newModule]);
     };
 
+    const removeCustomModule = (id) => {
+        setCustomModules(prev => prev.filter(m => m.id !== id));
+        // Also unselect it
+        setSelectedItems(prev => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+        })
+    };
+
     const updateCustomModule = (id, updates) => {
         setCustomModules(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
     };
