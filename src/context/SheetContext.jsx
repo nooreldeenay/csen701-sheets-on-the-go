@@ -84,6 +84,7 @@ export const SheetProvider = ({ children }) => {
     const [isGroupingMode, setIsGroupingMode] = useState(false);
     const [groupingSet, setGroupingSet] = useState(new Set());
     const [lastCreatedGroupId, setLastCreatedGroupId] = useState(null); // For UX highlighting
+    const [mergeDirection, setMergeDirection] = useState('horizontal'); // 'horizontal' or 'vertical'
 
     const toggleGroupingMode = () => {
         setIsGroupingMode(prev => {
@@ -92,6 +93,10 @@ export const SheetProvider = ({ children }) => {
             }
             return !prev;
         });
+    };
+
+    const toggleMergeDirection = () => {
+        setMergeDirection(prev => prev === 'horizontal' ? 'vertical' : 'horizontal');
     };
 
     const toggleOptionInGroup = (id) => {
@@ -223,13 +228,15 @@ export const SheetProvider = ({ children }) => {
         toggleOptionInGroup,
         createGroupFromSelection,
         lastCreatedGroupId,
+        mergeDirection, // Expose merge direction
+        toggleMergeDirection, // Expose toggle function
         sheetName, setSheetName,
         highlightNameInput, setHighlightNameInput,
         measuredHeights, updateMeasuredHeights, // Measurements
         pages: layout.pages,
         overflow: layout.overflow,
         itemsToMeasure
-    }), [selectedItems, weights, customModules, isGroupingMode, groupingSet, lastCreatedGroupId, sheetName, highlightNameInput, tutorialData, layout, measuredHeights, itemsToMeasure]);
+    }), [selectedItems, weights, customModules, isGroupingMode, groupingSet, lastCreatedGroupId, sheetName, highlightNameInput, tutorialData, layout, measuredHeights, itemsToMeasure, mergeDirection]);
 
     return (
         <SheetContext.Provider value={value}>

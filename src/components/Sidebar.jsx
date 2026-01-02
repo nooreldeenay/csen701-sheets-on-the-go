@@ -11,7 +11,7 @@ const Sidebar = ({ onOpenAbout }) => {
         addCustomModule, removeCustomModule, updateCustomModule,
         isGroupingMode, groupingSet, toggleGroupingMode, toggleOptionInGroup, createGroupFromSelection,
         lastCreatedGroupId, sheetName, setSheetName, highlightNameInput, setTutorialData,
-        overflow
+        overflow, mergeDirection, toggleMergeDirection
     } = useSheet();
     const { sidebarMode, tutorialStep, setTutorialStep, handleTutorialAction } = useTutorial();
     const [expanded, setExpanded] = React.useState({});
@@ -142,11 +142,35 @@ const Sidebar = ({ onOpenAbout }) => {
                 </div>
 
                 {isGroupingMode && (
-                    <div className="border border-purple-500 bg-[#1a051a] p-2">
-                        <div className="flex justify-between items-center mb-2 border-b border-purple-900 pb-1">
+                    <div className="border border-purple-500 bg-[#1a051a] p-2 space-y-2">
+                        <div className="flex justify-between items-center border-b border-purple-900 pb-1">
                             <span className="text-[10px] text-purple-400 font-bold uppercase blink">!! MERGE SEQUENCE ACTIVE !!</span>
                             <span className="text-[10px] text-purple-300">{groupingSet.size} SELECTED</span>
                         </div>
+                        
+                        <div className="flex gap-2">
+                            <button
+                                onClick={toggleMergeDirection}
+                                className={`flex-1 text-[10px] px-2 py-1.5 border transition-all uppercase tracking-wider font-bold ${
+                                    mergeDirection === 'horizontal'
+                                        ? 'bg-purple-500 text-black border-purple-300'
+                                        : 'bg-purple-900/50 text-purple-300 border-purple-600 hover:bg-purple-800/50'
+                                }`}
+                            >
+                                {mergeDirection === 'horizontal' ? '[ H ]' : '[ - ]'}
+                            </button>
+                            <button
+                                onClick={toggleMergeDirection}
+                                className={`flex-1 text-[10px] px-2 py-1.5 border transition-all uppercase tracking-wider font-bold ${
+                                    mergeDirection === 'vertical'
+                                        ? 'bg-purple-500 text-black border-purple-300'
+                                        : 'bg-purple-900/50 text-purple-300 border-purple-600 hover:bg-purple-800/50'
+                                }`}
+                            >
+                                {mergeDirection === 'vertical' ? '[ V ]' : '[ | ]'}
+                            </button>
+                        </div>
+
                         <button
                             onClick={() => {
                                 createGroupFromSelection();

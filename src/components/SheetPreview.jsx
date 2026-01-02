@@ -6,7 +6,7 @@ import { calculateLayout } from '../utils/layoutEngine';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 
-const ModuleItem = ({ item, compact = false }) => {
+const ModuleItem = ({ item, compact = false, mergeDirection = 'horizontal' }) => {
     // item.weight is now treated as font-size in px. Default to 10px if not set.
     const fontSize = item.weight || 10;
 
@@ -53,10 +53,10 @@ const ModuleItem = ({ item, compact = false }) => {
                 )}
 
                 {item.type === 'row' && (
-                    <div className="flex gap-2">
+                    <div className={mergeDirection === 'vertical' ? 'flex flex-col gap-2' : 'flex gap-2'}>
                         {item.content.map((subItem, idx) => (
-                            <div key={idx} className="flex-1 min-w-0">
-                                <ModuleItem item={{ ...subItem, weight: item.weight }} compact={true} />
+                            <div key={idx} className={mergeDirection === 'vertical' ? 'w-full' : 'flex-1 min-w-0'}>
+                                <ModuleItem item={{ ...subItem, weight: item.weight }} compact={true} mergeDirection={mergeDirection} />
                             </div>
                         ))}
                     </div>
@@ -66,7 +66,7 @@ const ModuleItem = ({ item, compact = false }) => {
     )
 }
 
-const A4Page = ({ pageNumber, items, sheetName }) => {
+const A4Page = ({ pageNumber, items, sheetName, mergeDirection = 'horizontal' }) => {
     return (
         <div
             id={`page-${pageNumber}`}
@@ -90,7 +90,7 @@ const A4Page = ({ pageNumber, items, sheetName }) => {
                     }}
                 >
                     {items.map((item, i) => (
-                        <ModuleItem key={`${item.id}-${i}`} item={item} />
+                        <ModuleItem key={`${item.id}-${i}`} item={item} mergeDirection={mergeDirection} />
                     ))}
                 </div>
             </div>
@@ -129,7 +129,7 @@ const OverflowSection = ({ items }) => {
 };
 
 // Hidden container to measure exact heights of modules
-const MeasurementContainer = ({ items, onMeasure }) => {
+const MeasurementContainer = ({ items, onMeasure, mergeDirection = 'horizontal' }) => {
     const containerRef = useRef(null);
 
     useLayoutEffect(() => {
@@ -157,7 +157,7 @@ const MeasurementContainer = ({ items, onMeasure }) => {
         // For now, sync measurement.
         measure();
 
-    }, [items, onMeasure]);
+    }, [items, onMeasure, mergeDirection]);
 
     // Width must match the column width of the A4 page exactly.
     // A4 Page width = 210mm
@@ -176,7 +176,7 @@ const MeasurementContainer = ({ items, onMeasure }) => {
         >
             {items.map((item, i) => (
                 <div key={`${item.id}-measure`} data-id={item.id}>
-                    <ModuleItem item={item} />
+                    <ModuleItem item={item} mergeDirection={mergeDirection} />
                 </div>
             ))}
         </div>
@@ -184,7 +184,7 @@ const MeasurementContainer = ({ items, onMeasure }) => {
 };
 
 const SheetPreview = () => {
-    const { sheetName, isGroupingMode, setHighlightNameInput, pages, overflow, itemsToMeasure, updateMeasuredHeights } = useSheet();
+    const { sheetName, isGroupingMode, setHighlightNameInput, pages, overflow, itemsToMeasure, updateMeasuredHeights, mergeDirection } = useSheet();
     const { showPreview } = useTutorial();
     const [showTooltip, setShowTooltip] = useState(false);
 
@@ -279,10 +279,10 @@ const SheetPreview = () => {
 
                 <div className="print-area drop-shadow-2xl">
                     {/* Page 1 */}
-                    <A4Page pageNumber={1} items={pages[0].items} sheetName={sheetName} />
+                    <A4Page pageNumber={1} items={pages[0].items} sheetName={sheetName} mergeDirection={mergeDirection} />
 
                     {/* Page 2 */}
-                    <A4Page pageNumber={2} items={pages[1].items} sheetName={sheetName} />
+                    <A4Page pageNumber={2} items={pages[1].items} sheetName={sheetName} mergeDirection={mergeDirection} />
 
                     {/* Overflow Section */}
                     <OverflowSection items={overflow} />
@@ -292,7 +292,7 @@ const SheetPreview = () => {
 
             {/* Hidden Measurement Layer */}
             {itemsToMeasure && itemsToMeasure.length > 0 && (
-                <MeasurementContainer items={itemsToMeasure} onMeasure={updateMeasuredHeights} />
+                <MeasurementContainer items={itemsToMeasure} onMeasure={updateMeasuredHeights} mergeDirection={mergeDirection} />
             )}
         </main >
     );
