@@ -1,19 +1,36 @@
 
-import React, { useMemo, useState, useLayoutEffect, useRef } from 'react';
+import React, { useMemo, useState, useLayoutEffect, useRef, useEffect } from 'react';
 import { useSheet } from '../context/SheetContext';
 import { useTutorial } from '../context/TutorialContext';
 import { calculateLayout } from '../utils/layoutEngine';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 
-const ModuleItem = ({ item, compact = false, mergeDirection = 'horizontal' }) => {
+const ModuleItem = ({ item, compact = false, mergeDirection = 'horizontal', isDragging = false, draggedId = null, onDragStart = null, onDragOver = null, onDrop = null }) => {
     // item.weight is now treated as font-size in px. Default to 10px if not set.
     const fontSize = item.weight || 10;
+    const isCurrentlyDragged = draggedId === item.id;
 
     return (
         <div
-            className="mb-px rounded p-px break-inside-avoid"
+            className={`mb-px rounded p-px break-inside-avoid cursor-grab active:cursor-grabbing transition-all ${
+                isCurrentlyDragged ? 'opacity-30' : ''
+            } ${draggedId && draggedId !== item.id ? 'hover:ring-2 hover:ring-blue-400 hover:ring-inset' : ''}`}
             style={{ pageBreakInside: 'avoid', breakInside: 'avoid-column' }}
+            draggable={!isDragging}
+            onDragStart={(e) => onDragStart && onDragStart(item.id, e)}
+            onDragOver={(e) => {
+                e.preventDefault();
+                onDragOver && onDragOver(item.id, e);
+            }}
+            onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onDrop && onDrop(item.id, e);
+            }}
+            onDragLeave={(e) => {
+                e.preventDefault();
+            }}
         >
             {!compact && (
                 <div className="font-bold text-slate-900 mb-0 flex justify-between items-baseline px-0.5 border-b border-slate-200">
@@ -56,7 +73,7 @@ const ModuleItem = ({ item, compact = false, mergeDirection = 'horizontal' }) =>
                     <div className={mergeDirection === 'vertical' ? 'flex flex-col gap-2' : 'flex gap-2'}>
                         {item.content.map((subItem, idx) => (
                             <div key={idx} className={mergeDirection === 'vertical' ? 'w-full' : 'flex-1 min-w-0'}>
-                                <ModuleItem item={{ ...subItem, weight: item.weight }} compact={true} mergeDirection={mergeDirection} />
+                                <ModuleItem item={{ ...subItem, weight: item.weight }} compact={true} mergeDirection={mergeDirection} isDragging={isDragging} draggedId={draggedId} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} />
                             </div>
                         ))}
                     </div>
@@ -66,7 +83,7 @@ const ModuleItem = ({ item, compact = false, mergeDirection = 'horizontal' }) =>
     )
 }
 
-const A4Page = ({ pageNumber, items, sheetName, mergeDirection = 'horizontal' }) => {
+const A4Page = ({ pageNumber, items, sheetName, mergeDirection = 'horizontal', isDragging = false, draggedId = null, onDragStart = null, onDragOver = null, onDrop = null }) => {
     return (
         <div
             id={`page-${pageNumber}`}
@@ -90,7 +107,7 @@ const A4Page = ({ pageNumber, items, sheetName, mergeDirection = 'horizontal' })
                     }}
                 >
                     {items.map((item, i) => (
-                        <ModuleItem key={`${item.id}-${i}`} item={item} mergeDirection={mergeDirection} />
+                        <ModuleItem key={`${item.id}-${i}`} item={item} mergeDirection={mergeDirection} isDragging={isDragging} draggedId={draggedId} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} />
                     ))}
                 </div>
             </div>
@@ -104,7 +121,7 @@ const A4Page = ({ pageNumber, items, sheetName, mergeDirection = 'horizontal' })
     );
 };
 
-const OverflowSection = ({ items }) => {
+const OverflowSection = ({ items, isDragging = false, draggedId = null, onDragStart = null, onDragOver = null, onDrop = null }) => {
     if (items.length === 0) return null;
     return (
         <div className="mt-16 p-8 border border-dashed border-red-900 bg-red-950/10 relative print:hidden">
@@ -119,7 +136,7 @@ const OverflowSection = ({ items }) => {
                 <div className="columns-2 gap-6 space-y-4">
                     {items.map((item, i) => (
                         <div key={i} className="bg-white p-1 border border-slate-200 shadow-[2px_2px_0px_rgba(153,27,27,0.2)] break-inside-avoid">
-                            <ModuleItem item={item} />
+                            <ModuleItem item={item} isDragging={isDragging} draggedId={draggedId} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} />
                         </div>
                     ))}
                 </div>
@@ -184,12 +201,58 @@ const MeasurementContainer = ({ items, onMeasure, mergeDirection = 'horizontal' 
 };
 
 const SheetPreview = () => {
-    const { sheetName, isGroupingMode, setHighlightNameInput, pages, overflow, itemsToMeasure, updateMeasuredHeights, mergeDirection } = useSheet();
+    const { sheetName, isGroupingMode, setHighlightNameInput, pages, overflow, itemsToMeasure, updateMeasuredHeights, mergeDirection, swapNodePositions } = useSheet();
     const { showPreview } = useTutorial();
     const [showTooltip, setShowTooltip] = useState(false);
+    const [draggedId, setDraggedId] = useState(null);
+    const [dragClonePos, setDragClonePos] = useState({ x: 0, y: 0 });
+    const [draggedItem, setDraggedItem] = useState(null);
 
     // DEBUG: Monitor layout flow
     console.log(`[PREVIEW] P1:${pages[0].items.length} P2:${pages[1].items.length} OVER:${overflow.length}`);
+
+    // Handle drag start
+    const handleDragStart = (itemId, event) => {
+        const allItems = [...pages[0].items, ...pages[1].items, ...overflow];
+        const item = allItems.find(i => i.id === itemId);
+        if (!item) return;
+
+        setDraggedId(itemId);
+        setDraggedItem(item);
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/html', '<div></div>'); // Required for drag image
+    };
+
+    // Handle drag over
+    const handleDragOver = (itemId, event) => {
+        setDragClonePos({ x: event.clientX, y: event.clientY });
+    };
+
+    // Handle drop
+    const handleDrop = (targetId, event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (draggedId && draggedId !== targetId) {
+            swapNodePositions(draggedId, targetId);
+        }
+
+        setDraggedId(null);
+        setDraggedItem(null);
+    };
+
+    // Handle ESC key to cancel drag
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' && draggedId) {
+                setDraggedId(null);
+                setDraggedItem(null);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [draggedId]);
 
     // Handle Print
     const handlePrint = () => {
@@ -279,14 +342,34 @@ const SheetPreview = () => {
 
                 <div className="print-area drop-shadow-2xl">
                     {/* Page 1 */}
-                    <A4Page pageNumber={1} items={pages[0].items} sheetName={sheetName} mergeDirection={mergeDirection} />
+                    <A4Page pageNumber={1} items={pages[0].items} sheetName={sheetName} mergeDirection={mergeDirection} isDragging={!!draggedId} draggedId={draggedId} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} />
 
                     {/* Page 2 */}
-                    <A4Page pageNumber={2} items={pages[1].items} sheetName={sheetName} mergeDirection={mergeDirection} />
+                    <A4Page pageNumber={2} items={pages[1].items} sheetName={sheetName} mergeDirection={mergeDirection} isDragging={!!draggedId} draggedId={draggedId} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} />
 
                     {/* Overflow Section */}
-                    <OverflowSection items={overflow} />
+                    <OverflowSection items={overflow} isDragging={!!draggedId} draggedId={draggedId} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} />
                 </div>
+
+                {/* Drag Clone - Semi-transparent copy following cursor */}
+                {draggedItem && draggedId && (
+                    <div
+                        className="fixed pointer-events-none z-50 opacity-50 bg-white border-2 border-blue-400 shadow-2xl rounded"
+                        style={{
+                            left: `${dragClonePos.x}px`,
+                            top: `${dragClonePos.y}px`,
+                            transform: 'translate(-50%, -50%)',
+                            maxWidth: '200px',
+                            padding: '8px',
+                            fontSize: `${draggedItem.weight || 10}px`
+                        }}
+                    >
+                        <div className="font-bold text-xs text-slate-600 mb-1">{draggedItem.title}</div>
+                        <div className="text-xs text-slate-600 truncate">
+                            {draggedItem.type === 'text' ? draggedItem.content.substring(0, 50) : `[${draggedItem.type.toUpperCase()}]`}
+                        </div>
+                    </div>
+                )}
             </div>
 
 

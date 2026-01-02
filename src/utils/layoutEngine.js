@@ -45,8 +45,9 @@ const estimateHeight = (submodule, fontSize = 10) => {
     return baseHeight;
 };
 
-export const getFlattenedItems = (modules, selectedIds, weights) => {
+export const getFlattenedItems = (modules, selectedIds, weights, itemOrder = []) => {
     const selectedItems = [];
+    const itemMap = new Map(); // Build a map of id -> item for ordering
 
     modules.forEach(mod => {
         if (mod.submodules) {
@@ -66,25 +67,45 @@ export const getFlattenedItems = (modules, selectedIds, weights) => {
                         .replace(/Lec\s+/i, 'L')
                         .trim();
 
-                    selectedItems.push({
+                    const item = {
                         ...sub,
                         parentTitle: conciseParent,
                         weight: weights[sub.id] || 10
-                    });
+                    };
+                    itemMap.set(sub.id, item);
                 }
             });
         }
     });
+
+    // If itemOrder is provided and has items, use it to order the results
+    if (itemOrder && itemOrder.length > 0) {
+        itemOrder.forEach(id => {
+            if (itemMap.has(id)) {
+                selectedItems.push(itemMap.get(id));
+            }
+        });
+        // Add any items that might be in selectedIds but not in itemOrder (edge case)
+        itemMap.forEach((item, id) => {
+            if (!itemOrder.includes(id)) {
+                selectedItems.push(item);
+            }
+        });
+    } else {
+        // Fallback to map order if no itemOrder provided
+        itemMap.forEach(item => selectedItems.push(item));
+    }
+
     return selectedItems;
 };
 
-export const calculateLayout = (modules, selectedIds, weights, measuredHeights = {}) => {
+export const calculateLayout = (modules, selectedIds, weights, measuredHeights = {}, itemOrder = []) => {
     // 1. Flatten selected submodules
     // Note: We used to do this here, but now we assume we might want them separate. 
     // Actually, let's reuse the helper for consistency, OR expect the caller to pass flattened items?
     // To keep API simple, we'll call the helper, but then map estimateHeight on top.
 
-    const baseItems = getFlattenedItems(modules, selectedIds, weights);
+    const baseItems = getFlattenedItems(modules, selectedIds, weights, itemOrder);
 
     // 2. Add Heights
     const sizedItems = baseItems.map(item => ({
@@ -94,9 +115,9 @@ export const calculateLayout = (modules, selectedIds, weights, measuredHeights =
             : estimateHeight(item, item.weight)
     }));
 
-    // 3. First Fit Decreasing (FFD) Packing
-    // Sort items by height descending
-    const sortedItems = [...sizedItems].sort((a, b) => b.estimatedHeight - a.estimatedHeight);
+    // 3. Preserve user order instead of sorting by height
+    // Use the order from itemOrder (already applied in getFlattenedItems)
+    const orderedItems = sizedItems;
 
     // Define 4 discrete columns (Bin Packing)
     // 2 Pages * 2 Columns/Page = 4 Columns
@@ -107,7 +128,7 @@ export const calculateLayout = (modules, selectedIds, weights, measuredHeights =
     }));
     const overflow = [];
 
-    sortedItems.forEach(item => {
+    orderedItems.forEach(item => {
         let placed = false;
         // Try to fit in the first available column bin (First Fit)
         // This naturally fills earlier gaps because we process columns 0..3 for every item.

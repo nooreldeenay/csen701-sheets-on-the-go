@@ -10,6 +10,9 @@ export const SheetProvider = ({ children }) => {
     // Set of selected submodule IDs
     const [selectedItems, setSelectedItems] = useState(new Set());
 
+    // Ordered array of selected item IDs (controls display order for drag-swap)
+    const [itemOrder, setItemOrder] = useState([]);
+
     // Map of submodule ID -> weight (0.5, 1, 1.5, 2)
     const [weights, setWeights] = useState({});
 
@@ -19,8 +22,13 @@ export const SheetProvider = ({ children }) => {
     const toggleSelection = (id) => {
         setSelectedItems(prev => {
             const next = new Set(prev);
-            if (next.has(id)) next.delete(id);
-            else next.add(id);
+            if (next.has(id)) {
+                next.delete(id);
+                setItemOrder(order => order.filter(itemId => itemId !== id));
+            } else {
+                next.add(id);
+                setItemOrder(order => [...order, id]);
+            }
             return next;
         });
     };
@@ -33,6 +41,14 @@ export const SheetProvider = ({ children }) => {
                 else next.delete(id);
             });
             return next;
+        });
+        setItemOrder(order => {
+            if (shouldSelect) {
+                const newIds = submoduleIds.filter(id => !order.includes(id));
+                return [...order, ...newIds];
+            } else {
+                return order.filter(id => !submoduleIds.includes(id));
+            }
         });
     };
 
@@ -47,7 +63,8 @@ export const SheetProvider = ({ children }) => {
             const next = new Set(prev);
             next.delete(id);
             return next;
-        })
+        });
+        setItemOrder(order => order.filter(itemId => itemId !== id));
     };
 
     const updateCustomModule = (id, updates) => {
@@ -161,9 +178,32 @@ export const SheetProvider = ({ children }) => {
             return next;
         });
 
+        // Update itemOrder: remove grouped items and add new group
+        setItemOrder(order => {
+            const newOrder = order.filter(id => !groupingSet.has(id));
+            newOrder.push(newGroup.id);
+            return newOrder;
+        });
+
         // Reset
         setIsGroupingMode(false);
         setGroupingSet(new Set());
+    };
+
+    // Swap node positions in itemOrder array
+    const swapNodePositions = (draggedId, targetId) => {
+        setItemOrder(prev => {
+            const newOrder = [...prev];
+            const draggedIndex = newOrder.findIndex(id => id === draggedId);
+            const targetIndex = newOrder.findIndex(id => id === targetId);
+
+            if (draggedIndex === -1 || targetIndex === -1) return prev;
+
+            // Swap positions
+            [newOrder[draggedIndex], newOrder[targetIndex]] = [newOrder[targetIndex], newOrder[draggedIndex]];
+
+            return newOrder;
+        });
     };
 
     // Tutorial Data Injection
@@ -186,8 +226,8 @@ export const SheetProvider = ({ children }) => {
                 submodules: tutorialData
             });
         }
-        return getFlattenedItems(allModules, selectedItems, weights);
-    }, [modules, customModules, tutorialData, selectedItems, weights]);
+        return getFlattenedItems(allModules, selectedItems, weights, itemOrder);
+    }, [modules, customModules, tutorialData, selectedItems, weights, itemOrder]);
 
     // Calculate Layout
     const layout = useMemo(() => {
@@ -206,8 +246,8 @@ export const SheetProvider = ({ children }) => {
                 submodules: tutorialData
             });
         }
-        return calculateLayout(allModules, selectedItems, weights, measuredHeights);
-    }, [modules, customModules, tutorialData, selectedItems, weights, measuredHeights]);
+        return calculateLayout(allModules, selectedItems, weights, measuredHeights, itemOrder);
+    }, [modules, customModules, tutorialData, selectedItems, weights, measuredHeights, itemOrder]);
 
     const value = useMemo(() => ({
         modules,
@@ -235,7 +275,8 @@ export const SheetProvider = ({ children }) => {
         measuredHeights, updateMeasuredHeights, // Measurements
         pages: layout.pages,
         overflow: layout.overflow,
-        itemsToMeasure
+        itemsToMeasure,
+        swapNodePositions // Expose swap function for drag-and-drop
     }), [selectedItems, weights, customModules, isGroupingMode, groupingSet, lastCreatedGroupId, sheetName, highlightNameInput, tutorialData, layout, measuredHeights, itemsToMeasure, mergeDirection]);
 
     return (
