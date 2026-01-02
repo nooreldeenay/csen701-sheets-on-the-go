@@ -56,6 +56,9 @@ export const SheetProvider = ({ children }) => {
         setWeights(prev => ({ ...prev, [id]: weight }));
     };
 
+    // Sheet Metadata
+    const [sheetName, setSheetName] = useState("Student Name");
+
     // Grouping Mode State
     const [isGroupingMode, setIsGroupingMode] = useState(false);
     const [groupingSet, setGroupingSet] = useState(new Set());
@@ -148,8 +151,9 @@ export const SheetProvider = ({ children }) => {
         toggleGroupingMode,
         toggleOptionInGroup,
         createGroupFromSelection,
-        lastCreatedGroupId
-    }), [selectedItems, weights, customModules, isGroupingMode, groupingSet, lastCreatedGroupId]);
+        lastCreatedGroupId,
+        sheetName, setSheetName
+    }), [selectedItems, weights, customModules, isGroupingMode, groupingSet, lastCreatedGroupId, sheetName]);
 
     return (
         <SheetContext.Provider value={value}>

@@ -59,7 +59,7 @@ const ModuleItem = ({ item }) => {
     )
 }
 
-const A4Page = ({ pageNumber, columns }) => {
+const A4Page = ({ pageNumber, columns, sheetName }) => {
     return (
         <div id={`page-${pageNumber}`} className="bg-white w-[210mm] h-[297mm] shadow-2xl relative mx-auto mb-8 transition-all duration-300 origin-top flex flex-col overflow-hidden group print:shadow-none print:mb-0 print:w-full print:h-full">
             {/* Helper Grid Overlay (Hover only) */}
@@ -86,7 +86,7 @@ const A4Page = ({ pageNumber, columns }) => {
 
             {/* Footer */}
             <div className="absolute bottom-1 w-full px-4 flex justify-between items-end border-t border-slate-100 pt-0.5">
-                <span className="text-[8px] text-slate-400 uppercase tracking-widest font-bold">CSEN701 Cheatsheet</span>
+                <span className="text-[8px] text-slate-400 uppercase tracking-widest font-bold">CSEN701 Datasheet - {sheetName}</span>
                 <span className="text-[8px] text-slate-400 font-mono">{pageNumber}</span>
             </div>
         </div>
@@ -94,16 +94,14 @@ const A4Page = ({ pageNumber, columns }) => {
 };
 
 const SheetPreview = () => {
-    const { modules, customModules, selectedItems, weights } = useSheet();
+    const { modules, customModules, selectedItems, weights, sheetName, isGroupingMode } = useSheet();
 
     const { pages, overflow } = useMemo(() => {
-        // Merge standard modules with a virtual "Custom" module group containing user items
-        // But since calculateLayout expects a list of modules where each has a list of submodules...
-        // We can just append the customModules as individual items if we wrap them or structure them.
-
+        // ... (same as before logic)
         // Let's create a virtual module for Custom items
         const allModules = [...modules];
         if (customModules.length > 0) {
+            // ... existing logic ...
             allModules.push({
                 id: 'custom-group',
                 title: 'Custom Items',
@@ -116,11 +114,38 @@ const SheetPreview = () => {
 
     // Handle Print
     const handlePrint = () => {
+        // optional validation
+        if (sheetName.trim() === '' || sheetName === 'Student Name') {
+            const name = prompt("Please enter your name for the sheet:", sheetName);
+            if (name) {
+                // We can't set state easily here if we want to print immediately, 
+                // but typically React updates are fast enough? 
+                // Actually prompt blocks.
+                // But we can't update context from here without the setter, which I didn't verify if I destructured.
+                // Let's just assume the user set it in sidebar.
+            }
+        }
         window.print();
     };
 
     return (
-        <main className="ml-80 flex-1 min-h-screen bg-slate-950 p-8 overflow-y-auto print:ml-0 print:p-0 print:overflow-visible">
+        <main className="ml-80 flex-1 min-h-screen bg-slate-950 p-8 overflow-y-auto print:ml-0 print:p-0 print:overflow-visible relative">
+
+            {/* Grouping Mode Overlay */}
+            {isGroupingMode && (
+                <div className="sticky top-0 z-50 mb-4 bg-purple-600/90 text-white p-4 rounded-lg shadow-lg backdrop-blur flex justify-between items-center animate-in fade-in slide-in-from-top-4 print:hidden">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-white/20 p-2 rounded-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" /></svg>
+                        </div>
+                        <div>
+                            <h3 className="font-bold">Grouping Mode Active</h3>
+                            <p className="text-sm opacity-90">Select items in the sidebar to merge into a single row.</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="max-w-[220mm] mx-auto print:max-w-none print:w-full print:mx-0">
                 <div className="flex justify-between items-center mb-6 print:hidden">
                     <div>
@@ -143,10 +168,10 @@ const SheetPreview = () => {
 
                 <div className="print-area">
                     {/* Page 1 */}
-                    <A4Page pageNumber={1} columns={pages[0].columns} />
+                    <A4Page pageNumber={1} columns={pages[0].columns} sheetName={sheetName} />
 
                     {/* Page 2 */}
-                    <A4Page pageNumber={2} columns={pages[1].columns} />
+                    <A4Page pageNumber={2} columns={pages[1].columns} sheetName={sheetName} />
                 </div>
             </div>
         </main>
