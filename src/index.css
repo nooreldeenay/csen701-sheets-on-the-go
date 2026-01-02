@@ -4,6 +4,11 @@
   body {
     @apply bg-slate-900 text-slate-50;
   }
+
+  input,
+  textarea {
+    @apply font-mono caret-green-500;
+  }
 }
 
 @media print {

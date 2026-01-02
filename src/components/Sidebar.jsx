@@ -3,14 +3,41 @@ import React from 'react';
 import { Settings, FileText, ChevronRight, ChevronDown, CheckSquare, Square, Plus, Trash, Image as ImageIcon, Type, Code, Layers, X, Check, Edit2, Minus, Terminal } from 'lucide-react';
 import { useSheet } from '../context/SheetContext';
 
+import { useTutorial } from '../context/TutorialContext';
+
 const Sidebar = () => {
     const {
         modules, customModules, selectedItems, toggleSelection, toggleModuleSelection, weights, updateWeight,
         addCustomModule, removeCustomModule, updateCustomModule,
         isGroupingMode, groupingSet, toggleGroupingMode, toggleOptionInGroup, createGroupFromSelection,
-        lastCreatedGroupId, sheetName, setSheetName
+        lastCreatedGroupId, sheetName, setSheetName, highlightNameInput, setTutorialData
     } = useSheet();
+    const { sidebarMode, tutorialStep, setTutorialStep, handleTutorialAction } = useTutorial();
     const [expanded, setExpanded] = React.useState({});
+
+    // Tutorial Helper: Example Module
+    const exampleModule = React.useMemo(() => ({
+        id: 'tut-basics',
+        title: 'TUTORIAL_BASICS',
+        submodules: [
+            { id: 'tut-1', title: 'Intro to Nodes', type: 'text', content: '## Welcome to Nodes\nThis is a standard text node. You can use it to write notes, explanations, or documentation for your cheat sheet.', parentTitle: 'Basics' },
+            { id: 'tut-2', title: 'Code Block', type: 'code', content: 'def greeting():\n    print("Hello, World!")\n    return True', parentTitle: 'Basics' }
+        ]
+    }), []);
+
+    // Register tutorial data on mount
+    React.useEffect(() => {
+        if (setTutorialData) setTutorialData(exampleModule.submodules);
+    }, [exampleModule, setTutorialData]);
+
+    // Determine what modules to show
+    // Determine what modules to show
+    // PARTIAL: Only Custom Items (handled separately in render), so Standard Lib list should be empty or hidden.
+    // FULL: All modules.
+    // EXAMPLE: Example module.
+    let displayModules = [];
+    if (sidebarMode === 'FULL') displayModules = modules;
+    else if (sidebarMode === 'EXAMPLE' || sidebarMode === 'PARTIAL') displayModules = [exampleModule];
 
     React.useEffect(() => {
         if (lastCreatedGroupId) {
@@ -20,6 +47,19 @@ const Sidebar = () => {
 
     const toggleExpand = (id) => {
         setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
+
+        if (id === 'custom') {
+            handleTutorialAction('EXPAND_CUSTOM');
+        }
+        if (id === 'tut-basics') {
+            handleTutorialAction('EXPAND_TUTORIAL');
+        }
+
+        // Tutorial Progression: If expanding the example module
+        if (tutorialStep === 1 && id === 'tut-basics') {
+            // Maybe auto-advance if they open example? 
+            // Actually, step 2 requires opening 'custom'. 
+        }
     };
 
     // Component for Retro Size Control
@@ -31,7 +71,16 @@ const Sidebar = () => {
             >
                 -
             </button>
-            <span className="w-8 text-[10px] text-center text-green-400 font-bold select-none font-mono">{value || 10}</span>
+            <input
+                type="number"
+                value={value || 10}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    if (!isNaN(val)) onChange(val);
+                }}
+                className="w-10 text-[10px] text-center text-green-400 font-bold select-none font-mono bg-transparent border-none focus:ring-0 focus:outline-none p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            />
             <button
                 onClick={(e) => { e.stopPropagation(); onChange((value || 10) + 1); }}
                 className="px-2 py-0.5 hover:bg-green-500 hover:text-black text-green-500 transition-colors border-l border-slate-600"
@@ -41,8 +90,14 @@ const Sidebar = () => {
         </div>
     );
 
+    if (sidebarMode === 'HIDDEN') {
+        return <aside className="w-96 h-screen bg-black border-r-2 border-slate-900 fixed left-0 top-0 z-10 font-mono flex items-center justify-center">
+            {/* Blank State */}
+        </aside>;
+    }
+
     return (
-        <aside className="w-80 h-screen bg-[#0a0a0a] border-r-2 border-slate-800 flex flex-col fixed left-0 top-0 overflow-hidden z-10 font-mono">
+        <aside className="w-96 h-screen bg-[#0a0a0a] border-r-2 border-slate-800 flex flex-col fixed left-0 top-0 overflow-hidden z-10 font-mono">
             {/* Header Area */}
             <div className={`p-4 border-b-2 border-slate-800 z-20 space-y-4 ${isGroupingMode ? 'bg-[#1a051a] border-purple-500' : 'bg-[#0a0a0a]'}`}>
 
@@ -57,22 +112,30 @@ const Sidebar = () => {
                         </div>
 
                         <button
-                            onClick={toggleGroupingMode}
-                            className={`text-[10px] px-2 py-1 border transition-all flex items-center gap-1 uppercase tracking-wider font-bold ${isGroupingMode
-                                ? 'bg-purple-600 text-black border-purple-400'
-                                : 'bg-transparent text-slate-400 border-slate-600 hover:border-green-500 hover:text-green-500'}`}
+                            onClick={() => {
+                                toggleGroupingMode();
+                                if (!isGroupingMode) handleTutorialAction('TOGGLE_MERGE');
+                            }}
+                            className={`text-[10px] px-3 py-1.5 border transition-all flex items-center gap-1 uppercase tracking-wider font-bold shadow-[0_0_10px_transparent] ${isGroupingMode
+                                ? 'bg-purple-600 text-black border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.5)]'
+                                : 'bg-[#1a1a1a] text-slate-400 border-slate-600 hover:border-green-500 hover:text-green-500 hover:bg-[#222]'}`}
                         >
                             {isGroupingMode ? '[ STOP_MERGE ]' : '[ MERGE_MODE ]'}
                         </button>
                     </div>
 
                     <div className="relative group">
-                        <span className="absolute left-2 top-1.5 text-xs text-slate-600 font-bold select-none">{'>'}</span>
+                        <span className={`absolute left-2 top-1.5 text-xs font-bold select-none transition-colors ${highlightNameInput ? 'text-orange-500' : 'text-slate-600'}`}>{'>'}</span>
                         <input
                             value={sheetName}
                             onChange={(e) => setSheetName(e.target.value)}
-                            className="w-full bg-[#111] border border-slate-700 hover:border-green-500 focus:border-green-400 pl-6 pr-2 py-1 text-sm text-green-400 placeholder-slate-700 focus:outline-none transition-colors uppercase"
-                            placeholder="PROJECT_NAME"
+                            className={`w-full bg-[#111] border pl-6 pr-2 py-1 text-sm placeholder-slate-700 focus:outline-none transition-all duration-300 uppercase
+                                ${highlightNameInput
+                                    ? 'border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.4)] text-orange-400 animate-pulse'
+                                    : 'border-slate-700 hover:border-green-500 focus:border-green-400 text-green-400'
+                                }
+                            `}
+                            placeholder="NAME YOUR SHEET"
                         />
                     </div>
                 </div>
@@ -84,7 +147,10 @@ const Sidebar = () => {
                             <span className="text-[10px] text-purple-300">{groupingSet.size} SELECTED</span>
                         </div>
                         <button
-                            onClick={createGroupFromSelection}
+                            onClick={() => {
+                                createGroupFromSelection();
+                                handleTutorialAction('CONFIRM_MERGE');
+                            }}
                             disabled={groupingSet.size < 2}
                             className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-30 disabled:cursor-not-allowed text-black text-xs py-2 font-bold uppercase tracking-widest border border-purple-400"
                         >
@@ -95,163 +161,168 @@ const Sidebar = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-3 space-y-4 scrollbar-thin">
-                {/* Custom Content Section */}
-                <div className="border border-slate-700 bg-[#0e0e0e]">
-                    <button
-                        onClick={() => toggleExpand('custom')}
-                        className="w-full flex items-center justify-between p-2 hover:bg-slate-900 transition-colors text-left group"
-                    >
-                        <span className="font-bold text-xs text-slate-400 group-hover:text-green-400 uppercase tracking-wider">
-                            ./USER_DEFINED
-                        </span>
-                        <span className="text-slate-600 group-hover:text-green-500">
-                            {expanded['custom'] ? '[-]' : '[+]'}
-                        </span>
-                    </button>
+                {/* Custom Content Section - Show in FULL and PARTIAL modes */}
+                {(sidebarMode === 'FULL' || sidebarMode === 'PARTIAL') && (
+                    <div className="border border-slate-700 bg-[#0e0e0e]">
+                        <button
+                            onClick={() => toggleExpand('custom')}
+                            className="w-full flex items-center justify-between p-2 hover:bg-slate-900 transition-colors text-left group"
+                        >
+                            <span className="font-bold text-xs text-slate-400 group-hover:text-green-400 uppercase tracking-wider">
+                                ./USER_DEFINED
+                            </span>
+                            <span className="text-slate-600 group-hover:text-green-500">
+                                {expanded['custom'] ? '[-]' : '[+]'}
+                            </span>
+                        </button>
 
-                    {expanded['custom'] && (
-                        <div className="p-2 space-y-3 border-t border-slate-800">
+                        {expanded['custom'] && (
+                            <div className="p-2 space-y-3 border-t border-slate-800">
 
-                            {/* Controls */}
-                            <div className="grid grid-cols-3 gap-2">
-                                <button
-                                    onClick={() => addCustomModule({
-                                        id: `custom-${Date.now()}`,
-                                        title: 'NOTE_01',
-                                        type: 'text',
-                                        content: 'TYPE_HERE...',
-                                        parentTitle: 'CUSTOM',
-                                        weight: 10
-                                    })}
-                                    className="bg-[#111] hover:bg-green-900/30 text-green-500 text-[9px] py-1 border border-green-900 hover:border-green-500 uppercase font-bold"
-                                >
-                                    TEXT
-                                </button>
+                                {/* Controls */}
+                                <div className="grid grid-cols-3 gap-2">
+                                    <button
+                                        onClick={() => addCustomModule({
+                                            id: `custom-${Date.now()}`,
+                                            title: 'NOTE_01',
+                                            type: 'text',
+                                            content: 'TYPE_HERE...',
+                                            parentTitle: 'CUSTOM',
+                                            weight: 10
+                                        })}
+                                        className="bg-[#111] hover:bg-green-900/30 text-green-500 text-[9px] py-1 border border-green-900 hover:border-green-500 uppercase font-bold"
+                                    >
+                                        TEXT
+                                    </button>
 
-                                <label className="bg-[#111] hover:bg-green-900/30 text-green-500 text-[9px] py-1 border border-green-900 hover:border-green-500 uppercase font-bold cursor-pointer text-center block">
-                                    IMG
-                                    <input
-                                        type="file"
-                                        className="hidden"
-                                        accept="image/*"
-                                        onChange={(e) => {
-                                            const file = e.target.files[0];
-                                            if (file) {
-                                                const reader = new FileReader();
-                                                reader.onloadend = () => {
-                                                    addCustomModule({
-                                                        id: `custom-${Date.now()}`,
-                                                        title: file.name,
-                                                        type: 'image',
-                                                        src: reader.result,
-                                                        parentTitle: 'CUSTOM',
-                                                        weight: 10
-                                                    });
-                                                };
-                                                reader.readAsDataURL(file);
-                                            }
-                                        }}
-                                    />
-                                </label>
+                                    <label className="bg-[#111] hover:bg-green-900/30 text-green-500 text-[9px] py-1 border border-green-900 hover:border-green-500 uppercase font-bold cursor-pointer text-center block">
+                                        IMG
+                                        <input
+                                            type="file"
+                                            className="hidden"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                const file = e.target.files[0];
+                                                if (file) {
+                                                    const reader = new FileReader();
+                                                    reader.onloadend = () => {
+                                                        addCustomModule({
+                                                            id: `custom-${Date.now()}`,
+                                                            title: file.name,
+                                                            type: 'image',
+                                                            src: reader.result,
+                                                            parentTitle: 'CUSTOM',
+                                                            weight: 10
+                                                        });
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                }
+                                            }}
+                                        />
+                                    </label>
 
-                                <button
-                                    onClick={() => addCustomModule({
-                                        id: `custom-${Date.now()}`,
-                                        title: 'EQ_01',
-                                        type: 'formula',
-                                        content: 'x = y^2',
-                                        parentTitle: 'CUSTOM',
-                                        weight: 10
-                                    })}
-                                    className="bg-[#111] hover:bg-green-900/30 text-green-500 text-[9px] py-1 border border-green-900 hover:border-green-500 uppercase font-bold"
-                                >
-                                    MATH
-                                </button>
-                            </div>
+                                    <button
+                                        onClick={() => addCustomModule({
+                                            id: `custom-${Date.now()}`,
+                                            title: 'EQ_01',
+                                            type: 'formula',
+                                            content: 'x = y^2',
+                                            parentTitle: 'CUSTOM',
+                                            weight: 10
+                                        })}
+                                        className="bg-[#111] hover:bg-green-900/30 text-green-500 text-[9px] py-1 border border-green-900 hover:border-green-500 uppercase font-bold"
+                                    >
+                                        MATH
+                                    </button>
+                                </div>
 
-                            {/* List Custom Items */}
-                            {customModules.map(item => (
-                                <div key={item.id} className={`flex flex-col gap-2 p-2 border transition-all
+                                {/* List Custom Items */}
+                                {customModules.map(item => (
+                                    <div key={item.id} className={`flex flex-col gap-2 p-2 border transition-all
                                             ${item.id === lastCreatedGroupId ? 'border-purple-500 bg-purple-900/10' : 'border-slate-800 bg-[#111]'}
                                         `}>
-                                    <div className="flex items-start gap-2">
-                                        {/* Checkbox */}
-                                        <button
-                                            onClick={() => isGroupingMode ? toggleOptionInGroup(item.id) : toggleSelection(item.id)}
-                                            className={`mt-1 font-mono text-xs ${isGroupingMode
+                                        <div className="flex items-start gap-2">
+                                            {/* Checkbox */}
+                                            <button
+                                                onClick={() => isGroupingMode ? toggleOptionInGroup(item.id) : toggleSelection(item.id)}
+                                                className={`mt-1 font-mono text-xs ${isGroupingMode
                                                     ? (groupingSet.has(item.id) ? "text-purple-400" : "text-slate-600 hover:text-purple-300")
                                                     : (selectedItems.has(item.id) ? "text-green-400" : "text-slate-600 hover:text-green-300")
-                                                }`}
-                                        >
-                                            {isGroupingMode
-                                                ? (groupingSet.has(item.id) ? '[x]' : '[ ]')
-                                                : (selectedItems.has(item.id) ? '[x]' : '[ ]')
-                                            }
-                                        </button>
+                                                    }`}
+                                            >
+                                                {isGroupingMode
+                                                    ? (groupingSet.has(item.id) ? '[x]' : '[ ]')
+                                                    : (selectedItems.has(item.id) ? '[x]' : '[ ]')
+                                                }
+                                            </button>
 
-                                        <div className="flex-1 min-w-0 space-y-2">
-                                            {/* Header */}
-                                            <div className="flex justify-between items-center gap-2 border-b border-slate-800 pb-1">
-                                                <input
-                                                    className="bg-transparent text-xs text-cyan-400 w-full border-none focus:ring-0 p-0 font-bold placeholder-slate-700 uppercase"
-                                                    value={item.title}
-                                                    onChange={(e) => updateCustomModule(item.id, { title: e.target.value })}
-                                                />
-                                                <button onClick={() => removeCustomModule(item.id)} className="text-slate-700 hover:text-red-500">
-                                                    <Trash size={10} />
-                                                </button>
-                                            </div>
-
-                                            {/* Meta */}
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-[8px] text-slate-500 uppercase tracking-tighter">TYPE: {item.type}</span>
-                                                <div className="flex items-center gap-1">
-                                                    <SizeControl
-                                                        value={item.weight}
-                                                        onChange={(val) => {
-                                                            const validVal = Math.max(6, Math.min(40, val));
-                                                            updateCustomModule(item.id, { weight: validVal });
-                                                            updateWeight(item.id, validVal);
-                                                        }}
-                                                    />
+                                            <div className="flex-1 min-w-0 space-y-2">
+                                                {/* Header */}
+                                                <div className="flex justify-between items-center gap-2 border-b border-slate-800 pb-1">
+                                                    <div className="flex-1 flex items-center gap-1">
+                                                        <Edit2 size={10} className="text-slate-600" />
+                                                        <input
+                                                            className="bg-transparent text-xs text-cyan-400 w-full border-none focus:ring-0 p-0 font-bold placeholder-slate-700 uppercase"
+                                                            value={item.title}
+                                                            onChange={(e) => updateCustomModule(item.id, { title: e.target.value })}
+                                                        />
+                                                    </div>
+                                                    <button onClick={() => removeCustomModule(item.id)} className="text-slate-700 hover:text-red-500">
+                                                        <Trash size={12} />
+                                                    </button>
                                                 </div>
-                                            </div>
 
-                                            {/* Editor */}
-                                            {item.type === 'text' && (
-                                                <textarea
-                                                    className="w-full bg-black text-[10px] text-slate-300 border border-slate-800 p-1 font-mono focus:border-green-500 focus:outline-none"
-                                                    value={item.content}
-                                                    onChange={(e) => updateCustomModule(item.id, { content: e.target.value })}
-                                                    rows={2}
-                                                />
-                                            )}
-                                            {item.type === 'formula' && (
-                                                <input
-                                                    className="w-full bg-black text-[10px] text-yellow-500 border border-slate-800 p-1 font-mono focus:border-green-500 focus:outline-none"
-                                                    value={item.content}
-                                                    onChange={(e) => updateCustomModule(item.id, { content: e.target.value })}
-                                                />
-                                            )}
+                                                {/* Meta */}
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-[10px] text-slate-500 uppercase tracking-tighter font-bold">TYPE: {item.type}</span>
+                                                    <div className="flex items-center gap-1">
+                                                        <SizeControl
+                                                            value={item.weight}
+                                                            onChange={(val) => {
+                                                                const validVal = Math.max(6, Math.min(40, val));
+                                                                updateCustomModule(item.id, { weight: validVal });
+                                                                updateWeight(item.id, validVal);
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {/* Editor */}
+                                                {item.type === 'text' && (
+                                                    <textarea
+                                                        className="w-full bg-black text-xs text-slate-300 border border-slate-800 p-2 font-mono focus:border-green-500 focus:outline-none"
+                                                        value={item.content}
+                                                        onChange={(e) => updateCustomModule(item.id, { content: e.target.value })}
+                                                        rows={2}
+                                                    />
+                                                )}
+                                                {item.type === 'formula' && (
+                                                    <input
+                                                        className="w-full bg-black text-xs text-yellow-500 border border-slate-800 p-2 font-mono focus:border-green-500 focus:outline-none"
+                                                        value={item.content}
+                                                        onChange={(e) => updateCustomModule(item.id, { content: e.target.value })}
+                                                    />
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Modules List */}
-                <div className="space-y-1">
+                <div className="space-y-4">
                     <div className="text-[9px] text-slate-600 font-bold uppercase tracking-widest pl-1 mb-1">
                         root/standard_lib
                     </div>
-                    {modules.map(mod => (
+                    {displayModules.map(mod => (
                         <div key={mod.id} className="border border-slate-800 bg-[#0a0a0a]">
                             <div className="flex items-center w-full hover:bg-[#111] transition-colors pr-2">
                                 <button
                                     onClick={() => toggleExpand(mod.id)}
-                                    className="flex-1 flex items-center justify-between p-2 text-left group"
+                                    className="flex-1 flex items-center justify-between p-2 text-left group min-w-0"
                                 >
                                     <span className="font-bold text-xs text-slate-400 group-hover:text-white uppercase truncate pr-2">
                                         ./{mod.title.replace(/\s+/g, '_')}
@@ -266,7 +337,19 @@ const Sidebar = () => {
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             const allSelected = mod.submodules.every(sub => selectedItems.has(sub.id));
-                                            toggleModuleSelection(mod.submodules.map(s => s.id), !allSelected);
+                                            const idsToToggle = mod.submodules.map(s => s.id);
+                                            toggleModuleSelection(idsToToggle, !allSelected);
+
+                                            // Tutorial Step 8 Check (Bulk Toggle)
+                                            if (tutorialStep === 8 && mod.id === 'tut-basics') {
+                                                // Start with current selection
+                                                const nextSelection = new Set(selectedItems);
+                                                idsToToggle.forEach(id => {
+                                                    if (!allSelected) nextSelection.add(id); // selecting all
+                                                    else nextSelection.delete(id); // deselecting all
+                                                });
+                                                handleTutorialAction('SELECT_TUTORIAL_ITEM', Array.from(nextSelection));
+                                            }
                                         }}
                                         className="p-1 text-slate-600 hover:text-green-400 font-mono text-[10px]"
                                         title="TOGGLE_ALL"
@@ -283,6 +366,9 @@ const Sidebar = () => {
                                         const weight = weights[sub.id] || 10;
                                         const isGrouped = groupingSet.has(sub.id);
 
+                                        const isTutItem = (sub.id === 'tut-1' || sub.id === 'tut-2');
+                                        const shouldPulse = tutorialStep === 5 && isTutItem && !selectedItems.has(sub.id);
+
                                         return (
                                             <div
                                                 key={sub.id}
@@ -292,10 +378,39 @@ const Sidebar = () => {
                                                         ? (isGrouped ? 'border-purple-500 bg-purple-900/10' : 'border-transparent opacity-50 hover:opacity-100 hover:border-purple-900')
                                                         : (isSelected ? 'border-green-800 bg-green-900/10' : 'border-transparent hover:border-slate-800')
                                                     }
+                            ${shouldPulse ? 'animate-pulse ring-1 ring-green-500 bg-green-900/20' : ''}
                           `}
                                             >
                                                 <div className="flex items-start gap-2 cursor-pointer"
-                                                    onClick={() => isGroupingMode ? toggleOptionInGroup(sub.id) : toggleSelection(sub.id)}>
+                                                    onClick={() => {
+                                                        if (isGroupingMode) {
+                                                            toggleOptionInGroup(sub.id);
+                                                            // For tutorial step 4: Select 2 items
+                                                            // Logic: If user just selected an item, new count is current + 1. 
+                                                            // We can just rely on the count being updated in context, but payload is safer.
+                                                            // Actually, let's just pass a high number or rely on effect. 
+                                                            // For now, let's pass the potential new size.
+                                                            // Since state updates are async, we aren't sure of new size yet. 
+                                                            // Simple hack: handleTutorialAction verifies if 'Select' action happened, 
+                                                            // then we can check count inside context or just accept it if we trust user logic.
+                                                            // Better: Pass nothing and let Context check actual state if it can, 
+                                                            // but context might not have latest state immediately.
+
+                                                            // Let's manually estimate:
+                                                            const currentlySelected = groupingSet.has(sub.id);
+                                                            const newCount = groupingSet.size + (currentlySelected ? -1 : 1);
+                                                            handleTutorialAction('SELECT_ITEM', newCount);
+                                                        } else {
+                                                            toggleSelection(sub.id);
+                                                            // Tutorial Step 8 Check (Individual Toggle)
+                                                            if (tutorialStep === 8) {
+                                                                const nextSelection = new Set(selectedItems);
+                                                                if (selectedItems.has(sub.id)) nextSelection.delete(sub.id);
+                                                                else nextSelection.add(sub.id);
+                                                                handleTutorialAction('SELECT_TUTORIAL_ITEM', Array.from(nextSelection));
+                                                            }
+                                                        }
+                                                    }}>
 
                                                     <div className={`mt-0.5 font-mono text-xs font-bold ${isGroupingMode
                                                         ? (isGrouped ? 'text-purple-400' : 'text-slate-700')
@@ -307,13 +422,13 @@ const Sidebar = () => {
                                                         }
                                                     </div>
                                                     <div className="flex-1">
-                                                        <div className={`text-xs ${isGroupingMode
+                                                        <div className={`text-sm ${isGroupingMode
                                                             ? (isGrouped ? 'text-purple-100' : 'text-slate-500')
                                                             : (isSelected ? 'text-green-100' : 'text-slate-500')
                                                             }`}>
                                                             {sub.title}
                                                         </div>
-                                                        <div className="text-[8px] text-slate-600 uppercase tracking-tighter mt-0.5">{sub.type}</div>
+                                                        <div className="text-[10px] text-slate-600 uppercase tracking-tighter mt-0.5">{sub.type}</div>
                                                     </div>
                                                 </div>
 
@@ -347,7 +462,7 @@ const Sidebar = () => {
                     <div>MEM_USAGE: LOW</div>
                 </div>
             </div>
-        </aside>
+        </aside >
     );
 };
 

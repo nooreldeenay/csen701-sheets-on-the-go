@@ -57,7 +57,8 @@ export const SheetProvider = ({ children }) => {
     };
 
     // Sheet Metadata
-    const [sheetName, setSheetName] = useState("Student Name");
+    const [sheetName, setSheetName] = useState("");
+    const [highlightNameInput, setHighlightNameInput] = useState(false);
 
     // Grouping Mode State
     const [isGroupingMode, setIsGroupingMode] = useState(false);
@@ -93,6 +94,12 @@ export const SheetProvider = ({ children }) => {
             // Check custom
             const custom = customModules.find(c => c.id === id);
             if (custom) return custom;
+
+            // Check tutorial
+            if (tutorialData) {
+                const tut = tutorialData.find(t => t.id === id);
+                if (tut) return tut;
+            }
 
             // Check standard
             for (const mod of modules) {
@@ -134,9 +141,13 @@ export const SheetProvider = ({ children }) => {
         setGroupingSet(new Set());
     };
 
+    // Tutorial Data Injection
+    const [tutorialData, setTutorialData] = useState([]);
+
     const value = useMemo(() => ({
         modules,
         customModules,
+        tutorialData, setTutorialData, // Tutorial Ephemeral
         selectedItems,
         weights,
         toggleSelection,
@@ -152,8 +163,9 @@ export const SheetProvider = ({ children }) => {
         toggleOptionInGroup,
         createGroupFromSelection,
         lastCreatedGroupId,
-        sheetName, setSheetName
-    }), [selectedItems, weights, customModules, isGroupingMode, groupingSet, lastCreatedGroupId, sheetName]);
+        sheetName, setSheetName,
+        highlightNameInput, setHighlightNameInput
+    }), [selectedItems, weights, customModules, isGroupingMode, groupingSet, lastCreatedGroupId, sheetName, highlightNameInput, tutorialData]);
 
     return (
         <SheetContext.Provider value={value}>

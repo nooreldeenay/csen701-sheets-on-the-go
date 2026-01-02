@@ -1,6 +1,7 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useSheet } from '../context/SheetContext';
+import { useTutorial } from '../context/TutorialContext';
 import { calculateLayout } from '../utils/layoutEngine';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
@@ -95,7 +96,9 @@ const A4Page = ({ pageNumber, columns, sheetName }) => {
 };
 
 const SheetPreview = () => {
-    const { modules, customModules, selectedItems, weights, sheetName, isGroupingMode } = useSheet();
+    const { modules, customModules, selectedItems, weights, sheetName, isGroupingMode, setHighlightNameInput, tutorialData } = useSheet();
+    const { showPreview } = useTutorial();
+    const [showTooltip, setShowTooltip] = useState(false); // Add state
 
     const { pages, overflow } = useMemo(() => {
         // Let's create a virtual module for Custom items
@@ -108,21 +111,34 @@ const SheetPreview = () => {
             });
         }
 
+        // Inject Tutorial Data if present
+        if (tutorialData && tutorialData.length > 0) {
+            allModules.push({
+                id: 'tutorial-group',
+                title: 'Tutorial Basics',
+                submodules: tutorialData
+            });
+        }
+
         return calculateLayout(allModules, selectedItems, weights);
-    }, [modules, customModules, selectedItems, weights]);
+    }, [modules, customModules, tutorialData, selectedItems, weights]);
 
     // Handle Print
     const handlePrint = () => {
-        // optional validation
-        if (sheetName.trim() === '' || sheetName === 'Student Name') {
-            const name = prompt("Enter Sheet Name:", sheetName);
-            // Ignoring set logic, just proceed
-        }
         window.print();
     };
 
+    if (!showPreview) {
+        return <main className="ml-96 flex-1 min-h-screen bg-[#050505] p-8 flex items-center justify-center font-mono text-green-900">
+            <div className="flex flex-col items-center gap-4 opacity-50">
+                <div className="w-16 h-16 border-2 border-green-900 border-t-green-500 rounded-full animate-spin"></div>
+                <p className="tracking-widest text-sm">WAITING FOR INPUT STREAM...</p>
+            </div>
+        </main>;
+    }
+
     return (
-        <main className="ml-80 flex-1 min-h-screen bg-[#111] p-8 overflow-y-auto print:ml-0 print:p-0 print:overflow-visible relative font-mono text-slate-300">
+        <main className="ml-96 flex-1 min-h-screen bg-[#111] p-8 overflow-y-auto print:ml-0 print:p-0 print:overflow-visible relative font-mono text-slate-300">
 
             {/* Background Decor */}
             <div className="absolute inset-0 z-0 opacity-5 pointer-events-none"
@@ -158,12 +174,39 @@ const SheetPreview = () => {
                         )}
                     </div>
 
-                    <button
-                        onClick={handlePrint}
-                        className="px-6 py-2 bg-green-600 hover:bg-green-500 text-black font-bold uppercase tracking-wider transition-colors shadow-[0_0_15px_rgba(34,197,94,0.4)] hover:shadow-[0_0_25px_rgba(34,197,94,0.6)] border border-green-400"
+                    <div
+                        className="relative inline-block"
+                        onMouseEnter={() => {
+                            if (!sheetName.trim()) {
+                                setHighlightNameInput(true);
+                                setShowTooltip(true);
+                            }
+                        }}
+                        onMouseLeave={() => {
+                            setHighlightNameInput(false);
+                            setShowTooltip(false);
+                        }}
                     >
-                        [ PRINT_ / SAVE_PDF ]
-                    </button>
+                        <button
+                            onClick={handlePrint}
+                            disabled={!sheetName.trim()}
+                            className={`flex items-center gap-2 px-6 py-2 border font-bold uppercase tracking-wider transition-all
+                                ${!sheetName.trim()
+                                    ? 'bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed'
+                                    : 'bg-green-900/20 text-green-400 border-green-500/50 hover:bg-green-400 hover:text-black hover:shadow-[0_0_15px_rgba(74,222,128,0.5)]'
+                                }`}
+                        >
+                            <span>[ PRINT_SHEET ]</span>
+                        </button>
+
+                        {/* Tooltip */}
+                        {showTooltip && (
+                            <div className="absolute top-full right-0 mt-2 w-48 bg-black border border-orange-500 text-orange-500 text-xs p-2 shadow-lg z-50">
+                                <p className="font-bold">>> ERROR: NAME_MISSING</p>
+                                <p>Please name your sheet in the sidebar to proceed.</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <div className="print-area drop-shadow-2xl">
