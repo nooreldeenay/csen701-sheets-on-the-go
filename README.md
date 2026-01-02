@@ -1,8 +1,4 @@
-# 🟩 CSEN701: Sheet-On-The-Go
-
-> **System Status**: ONLINE  
-> **Kernel**: REACT V19  
-> **Visuals**: RETRO_TERMINAL_V1  
+# 🟩 CSEN701: Sheets-On-The-Go
 
 ---
 
