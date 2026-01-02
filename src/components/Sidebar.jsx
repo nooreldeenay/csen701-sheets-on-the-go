@@ -133,18 +133,21 @@ const Sidebar = () => {
                                             </div>
 
                                             {isSelected && (
-                                                <div className="flex items-center gap-2 pl-7">
-                                                    <span className="text-[10px] text-slate-500">Size:</span>
-                                                    <div className="flex items-center bg-slate-800 rounded border border-slate-700">
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); updateWeight(sub.id, Math.max(0.5, weight - 0.5)); }}
-                                                            className="px-2 py-0.5 text-xs text-slate-400 hover:text-white border-r border-slate-700"
-                                                        >-</button>
-                                                        <span className="px-2 text-[10px] text-blue-300 min-w-[30px] text-center">{weight}x</span>
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); updateWeight(sub.id, Math.min(3, weight + 0.5)); }}
-                                                            className="px-2 py-0.5 text-xs text-slate-400 hover:text-white border-l border-slate-700"
-                                                        >+</button>
+                                                <div className="flex items-center gap-2 pl-7 mt-1">
+                                                    <span className="text-[10px] text-slate-500">Size (px):</span>
+                                                    <div className="flex items-center bg-slate-800 rounded border border-slate-700 w-16">
+                                                        <input
+                                                            type="number"
+                                                            min="6"
+                                                            max="30"
+                                                            value={weight || 10}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            onChange={(e) => {
+                                                                const val = parseInt(e.target.value) || 10;
+                                                                updateWeight(sub.id, val);
+                                                            }}
+                                                            className="w-full bg-transparent text-[10px] text-white text-center p-0.5 border-none focus:ring-0 appearance-none"
+                                                        />
                                                     </div>
                                                 </div>
                                             )}

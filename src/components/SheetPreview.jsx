@@ -5,21 +5,19 @@ import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 
 const ModuleItem = ({ item }) => {
-    const scale = item.weight || 1;
-    // We can use zoom or strict styling. Zoom is non-standard but works well for print usually.
-    // Alternatively, we scale font-size.
-    // Let's use a scale wrapper for the content, but keep container flow.
+    // item.weight is now treated as font-size in px. Default to 10px if not set.
+    const fontSize = item.weight || 10;
 
     return (
-        <div className="mb-1 border border-slate-200 rounded p-[2px] break-inside-avoid shadow-sm bg-white" >
+        <div className="mb-1 border border-slate-200 rounded p-[2px] break-inside-avoid bg-white" >
             <div className="font-bold text-slate-700 border-b border-slate-100 mb-0.5 flex justify-between items-center bg-slate-50 px-1">
                 <span className="text-[9px] leading-tight">{item.title}</span>
                 <span className="text-[7px] text-slate-400 font-normal truncate max-w-[40px]">{item.parentTitle}</span>
             </div>
 
-            <div className="module-content overflow-hidden px-1" style={{ fontSize: `${scale * 100}%` }}>
+            <div className="module-content overflow-hidden px-1" style={{ fontSize: `${fontSize}px` }}>
                 {item.type === 'text' && (
-                    <div className="whitespace-pre-wrap font-serif leading-tight text-slate-800 text-[10px]">
+                    <div className="whitespace-pre-wrap font-serif leading-tight text-slate-800" style={{ fontSize: '1em' }}>
                         {item.content}
                     </div>
                 )}
@@ -29,19 +27,20 @@ const ModuleItem = ({ item }) => {
                         <img
                             src={item.src}
                             className="object-contain rounded"
-                            style={{ maxHeight: `${150 * scale}px` }}
+                            // approximate image height scaling based on font size to keep ratio
+                            style={{ maxHeight: `${fontSize * 15}px` }}
                         />
                     </div>
                 )}
 
                 {item.type === 'formula' && (
-                    <div className="text-center my-0.5" style={{ fontSize: `${1.1 * scale}em` }}>
+                    <div className="text-center my-0.5" style={{ fontSize: '1.2em' }}>
                         <InlineMath math={item.content} />
                     </div>
                 )}
 
                 {item.type === 'code' && (
-                    <div className="bg-slate-50 p-0.5 rounded font-mono text-[8px] whitespace-pre overflow-x-auto leading-tight">
+                    <div className="bg-slate-50 p-0.5 rounded font-mono whitespace-pre overflow-x-auto leading-tight" style={{ fontSize: '0.9em' }}>
                         {item.content}
                     </div>
                 )}

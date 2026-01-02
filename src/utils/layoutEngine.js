@@ -10,23 +10,32 @@ const SAFE_HEIGHT = 1050;
 const COL_WIDTH_MM = 90; // Approx
 
 // Estimate height of a module
-const estimateHeight = (submodule, scale = 1) => {
-    let baseHeight = 40; // Title + Padding
+// Estimate height of a module
+const estimateHeight = (submodule, fontSize = 10) => {
+    // scale relative to default 10px
+    const scale = fontSize / 10;
+
+    let baseHeight = 40; // Title + Padding (approx constant)
 
     if (submodule.type === 'text') {
-        // Rough estimate: 1 line = 20px. 50 chars per line.
-        const lines = Math.ceil(submodule.content.length / 50);
-        baseHeight += lines * 14;
+        // Rough estimate: 1 line = 20px at 10px font. 
+        // 50 chars per line at 10px. 
+        // If font implies larger width, fewer chars per line.
+        // Let's approximate: line height scales with font size.
+        const charsPerLine = Math.floor(50 / scale);
+        const lines = Math.ceil(submodule.content.length / Math.max(1, charsPerLine));
+        baseHeight += lines * (14 * scale);
     } else if (submodule.type === 'image') {
-        baseHeight += 200; // Fixed image height placeholder
+        // Image height we set to fontSize * 15 in render
+        baseHeight += (fontSize * 15);
     } else if (submodule.type === 'formula') {
-        baseHeight += 60;
+        baseHeight += 60 * scale;
     } else if (submodule.type === 'code') {
         const lines = submodule.content.split('\n').length;
-        baseHeight += lines * 16;
+        baseHeight += lines * (16 * scale);
     }
 
-    return baseHeight * scale;
+    return baseHeight;
 };
 
 export const calculateLayout = (modules, selectedIds, weights) => {
@@ -39,8 +48,8 @@ export const calculateLayout = (modules, selectedIds, weights) => {
                 selectedItems.push({
                     ...sub,
                     parentTitle: mod.title,
-                    weight: weights[sub.id] || 1,
-                    estimatedHeight: estimateHeight(sub, weights[sub.id] || 1)
+                    weight: weights[sub.id] || 10,
+                    estimatedHeight: estimateHeight(sub, weights[sub.id] || 10)
                 });
             }
         });

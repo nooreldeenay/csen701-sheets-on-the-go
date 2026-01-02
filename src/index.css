@@ -16,4 +16,26 @@
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
+
+  /* Hide Sidebar and UI controls */
+  aside,
+  button,
+  input {
+    display: none !important;
+  }
+
+  /* Ensure the sheet (A4Page) takes over */
+  #root>div {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: white !important;
+  }
+
+  /* Remove printed shadows */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
 }
