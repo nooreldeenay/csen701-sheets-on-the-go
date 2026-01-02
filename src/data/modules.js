@@ -554,7 +554,7 @@ int main() {
                 id: 'pico-w-pinout',
                 title: 'Raspberry Pi Pico 2 W Pinout',
                 type: 'image',
-                src: '/pico2w-pinout.svg',
+                src: 'pico2w-pinout.svg',
                 parentTitle: 'Hardware'
             }
         ]
