@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { useSheet } from '../context/SheetContext';
 import { calculateLayout } from '../utils/layoutEngine';
@@ -61,7 +62,7 @@ const ModuleItem = ({ item }) => {
 
 const A4Page = ({ pageNumber, columns, sheetName }) => {
     return (
-        <div id={`page-${pageNumber}`} className="bg-white w-[210mm] h-[297mm] shadow-2xl relative mx-auto mb-8 transition-all duration-300 origin-top flex flex-col overflow-hidden group print:shadow-none print:mb-0 print:w-full print:h-full">
+        <div id={`page-${pageNumber}`} className="bg-white w-[210mm] h-[297mm] shadow-[0_0_20px_rgba(0,0,0,0.5)] relative mx-auto mb-16 transition-all duration-300 origin-top flex flex-col overflow-hidden group print:shadow-none print:mb-0 print:w-full print:h-full">
             {/* Helper Grid Overlay (Hover only) */}
             <div className="absolute inset-0 pointer-events-none border border-red-500/0 group-hover:border-red-500/20 transition-colors z-50 print:hidden" />
 
@@ -97,11 +98,9 @@ const SheetPreview = () => {
     const { modules, customModules, selectedItems, weights, sheetName, isGroupingMode } = useSheet();
 
     const { pages, overflow } = useMemo(() => {
-        // ... (same as before logic)
         // Let's create a virtual module for Custom items
         const allModules = [...modules];
         if (customModules.length > 0) {
-            // ... existing logic ...
             allModules.push({
                 id: 'custom-group',
                 title: 'Custom Items',
@@ -116,57 +115,58 @@ const SheetPreview = () => {
     const handlePrint = () => {
         // optional validation
         if (sheetName.trim() === '' || sheetName === 'Student Name') {
-            const name = prompt("Please enter your name for the sheet:", sheetName);
-            if (name) {
-                // We can't set state easily here if we want to print immediately, 
-                // but typically React updates are fast enough? 
-                // Actually prompt blocks.
-                // But we can't update context from here without the setter, which I didn't verify if I destructured.
-                // Let's just assume the user set it in sidebar.
-            }
+            const name = prompt("Enter Sheet Name:", sheetName);
+            // Ignoring set logic, just proceed
         }
         window.print();
     };
 
     return (
-        <main className="ml-80 flex-1 min-h-screen bg-slate-950 p-8 overflow-y-auto print:ml-0 print:p-0 print:overflow-visible relative">
+        <main className="ml-80 flex-1 min-h-screen bg-[#111] p-8 overflow-y-auto print:ml-0 print:p-0 print:overflow-visible relative font-mono text-slate-300">
+
+            {/* Background Decor */}
+            <div className="absolute inset-0 z-0 opacity-5 pointer-events-none"
+                style={{ backgroundImage: 'linear-gradient(#222 1px, transparent 1px), linear-gradient(90deg, #222 1px, transparent 1px)', backgroundSize: '40px 40px' }}
+            ></div>
 
             {/* Grouping Mode Overlay */}
             {isGroupingMode && (
-                <div className="sticky top-0 z-50 mb-4 bg-purple-600/90 text-white p-4 rounded-lg shadow-lg backdrop-blur flex justify-between items-center animate-in fade-in slide-in-from-top-4 print:hidden">
+                <div className="sticky top-0 z-50 mb-6 bg-purple-900/90 text-purple-100 border border-purple-500 p-4 shadow-[0_0_20px_rgba(168,85,247,0.3)] flex justify-between items-center print:hidden">
                     <div className="flex items-center gap-3">
-                        <div className="bg-white/20 p-2 rounded-full">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" /></svg>
+                        <div className="bg-purple-500/20 p-2 border border-purple-400">
+                            <span className="font-bold text-xl">!</span>
                         </div>
                         <div>
-                            <h3 className="font-bold">Grouping Mode Active</h3>
-                            <p className="text-sm opacity-90">Select items in the sidebar to merge into a single row.</p>
+                            <h3 className="font-bold uppercase tracking-wider text-purple-300">>> MERGE_MODE_ENGAGED</h3>
+                            <p className="text-xs font-mono text-purple-200">Select items from control panel to fuse.</p>
                         </div>
                     </div>
                 </div>
             )}
 
-            <div className="max-w-[220mm] mx-auto print:max-w-none print:w-full print:mx-0">
-                <div className="flex justify-between items-center mb-6 print:hidden">
-                    <div>
-                        <h1 className="text-2xl font-bold text-white">Live Preview</h1>
+            <div className="max-w-[220mm] mx-auto relative z-10 print:max-w-none print:w-full print:mx-0">
+                <div className="flex justify-between items-center mb-8 print:hidden">
+                    <div className="space-y-1">
+                        <h1 className="text-xl font-bold text-green-500 uppercase tracking-widest flex items-center gap-2">
+                            <span className="w-2 h-4 bg-green-500 animate-pulse inline-block"></span>
+                            LIVE_PREVIEW_FEED
+                        </h1>
                         {overflow.length > 0 && (
-                            <div className="text-red-400 text-sm mt-1 flex items-center gap-1 animate-pulse">
-                                ⚠️ {overflow.length} items overflowing! Decrease weights or remove items.
+                            <div className="text-red-500 text-xs font-mono flex items-center gap-2 border border-red-900 bg-red-900/10 px-2 py-1">
+                                [WARNING] BUFF_OVERFLOW: {overflow.length} ITEM(S)
                             </div>
                         )}
                     </div>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={handlePrint}
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-blue-900/20 flex items-center gap-2"
-                        >
-                            Print / Save PDF
-                        </button>
-                    </div>
+
+                    <button
+                        onClick={handlePrint}
+                        className="px-6 py-2 bg-green-600 hover:bg-green-500 text-black font-bold uppercase tracking-wider transition-colors shadow-[0_0_15px_rgba(34,197,94,0.4)] hover:shadow-[0_0_25px_rgba(34,197,94,0.6)] border border-green-400"
+                    >
+                        [ PRINT_ / SAVE_PDF ]
+                    </button>
                 </div>
 
-                <div className="print-area">
+                <div className="print-area drop-shadow-2xl">
                     {/* Page 1 */}
                     <A4Page pageNumber={1} columns={pages[0].columns} sheetName={sheetName} />
 
