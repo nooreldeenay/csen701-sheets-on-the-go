@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 @layer base {
   body {
@@ -13,6 +11,7 @@
     margin: 0;
     size: A4;
   }
+
   body {
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
