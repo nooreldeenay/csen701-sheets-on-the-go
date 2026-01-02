@@ -170,6 +170,14 @@ const Sidebar = ({ onOpenAbout }) => {
                     </span>
                 </div>
 
+                {/* Space Reduction Tip */}
+                <div className="bg-blue-900/20 border border-blue-700/50 p-2 text-[9px] font-mono leading-tight flex items-start gap-2">
+                    <span className="text-blue-500 font-bold">💡</span>
+                    <span className="text-blue-200/70">
+                        <strong className="text-blue-500 uppercase">Tip:</strong> MERGING LARGE CODE BLOCKS OFFERS THE LARGEST AMOUNT OF SPACE REDUCTION.
+                    </span>
+                </div>
+
                 {/* Custom Content Section - Show in FULL and PARTIAL modes */}
                 {(sidebarMode === 'FULL' || sidebarMode === 'PARTIAL') && (
                     <div className="border border-slate-700 bg-[#0e0e0e]">
