@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Github, ExternalLink, Cpu, Code, Coffee, Calendar, MapPin, Terminal, User } from 'lucide-react';
+import { X, Github, ExternalLink, Cpu, Code, Coffee, Calendar, MapPin, Terminal, User, Mail } from 'lucide-react';
 import { APP_VERSION, APP_DATE } from '../constants';
 
 const AboutModal = ({ isOpen, onClose }) => {
@@ -8,17 +8,17 @@ const AboutModal = ({ isOpen, onClose }) => {
     const [activeTab, setActiveTab] = useState('SYSTEM');
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-2xl bg-[#0a0a0a] border border-green-500 shadow-[0_0_50px_rgba(34,197,94,0.15)] flex flex-col font-mono relative overflow-hidden">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
+            <div className="w-full max-w-2xl bg-[#0a0a0a] border border-green-500 shadow-[0_0_50px_rgba(34,197,94,0.15)] flex flex-col font-mono relative overflow-hidden" onClick={(e) => e.stopPropagation()}>
 
                 {/* Scanlines */}
-                <div className="absolute inset-0 pointer-events-none opacity-5 bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.5)_50%)] bg-[length:100%_4px] z-10"></div>
+                <div className="absolute inset-0 pointer-events-none opacity-5 bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.5)_50%)] bg-size-[100%_4px] z-10"></div>
 
                 {/* Header */}
                 <div className="flex justify-between items-center p-2 border-b border-green-900 bg-[#0f1a0f]">
                     <div className="flex items-center gap-2 text-green-500">
                         <Terminal size={16} />
-                        <span className="font-bold text-sm tracking-wider">SYS_INFO_V1.0.exe</span>
+                        <span className="font-bold text-sm tracking-wider">SYS_INFO_V{APP_VERSION}.exe</span>
                     </div>
                     <button
                         onClick={onClose}

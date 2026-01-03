@@ -220,7 +220,7 @@ export const SheetProvider = ({ children }) => {
         setHasManualOrder(true);
 
         // Auto-disable auto-sorting strategies to respect user's manual drop
-        if (groupingStrategy !== 'default') {
+        if (groupingStrategy !== 'default' && groupingStrategy !== 'manual') {
             setGroupingStrategy('default');
         }
     };

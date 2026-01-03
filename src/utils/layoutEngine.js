@@ -6,14 +6,14 @@
 
 const COLUMNS_PER_PAGE = 2; // 2 columns
 const PAGE_HEIGHT_PX = 1122; // A4 @ 96 DPI (approx). Let's be conservative: 1000px safe area.
-const SAFE_HEIGHT = 1092; // Maximize usage of ~1099px container, leaving minimal safety buffer
+const SAFE_HEIGHT = 1098; // Extreme density test: ~1100px theoretical max
 
 // Estimate height of a module
 const estimateHeight = (submodule, fontSize = 10) => {
     // scale relative to default 10px
     const scale = fontSize / 10;
 
-    let baseHeight = 14; // Safer overhead to prevent column overflow
+    let baseHeight = 16; // Increased safety overhead
 
     if (submodule.type === 'text') {
         const charsPerLine = Math.floor(55 / scale); // Conservative wrapping

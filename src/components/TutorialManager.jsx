@@ -139,13 +139,13 @@ const TutorialManager = () => {
     // ... (keep surrounding code)
 
     return (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] w-[600px] pointer-events-none">
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-200 w-[600px] pointer-events-none">
             <div className="bg-[#0a0a0a] border border-green-500 p-4 shadow-[0_0_20px_rgba(34,197,94,0.2)] animate-in slide-in-from-bottom duration-500">
                 <div className="flex items-center gap-2 mb-2 border-b border-green-900 pb-2">
                     <div className="w-3 h-3 bg-green-500 animate-pulse"></div>
                     <span className="text-xs text-green-500 font-bold tracking-widest uppercase">TUTORIAL_GUIDE_V1.0</span>
                 </div>
-                <div className="font-mono text-green-400 whitespace-pre-line text-sm md:text-base min-h-[3rem]">
+                <div className="font-mono text-green-400 whitespace-pre-line text-sm md:text-base min-h-12">
                     <Typewriter
                         key={message} // Re-mounts on new message to restart typing
                         text={message}
@@ -153,9 +153,10 @@ const TutorialManager = () => {
                     />
                     <span className="animate-pulse">_</span>
                 </div>
-                {waitingForInput && <div className="text-[10px] text-green-700 font-mono text-center mt-2 group-hover:text-green-500 transition-colors">
-                    CORE SYSTEM v{APP_VERSION}
-                </div>
+                {waitingForInput && (
+                    <div className="mt-2 text-[10px] text-green-700 font-mono animate-pulse uppercase">
+                        [PRESS ENTER TO CONTINUE]
+                    </div>
                 )}
 
                 {/* Skip Hint */}

@@ -6,7 +6,7 @@ import { calculateLayout } from '../utils/layoutEngine';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 
-const ModuleItem = ({ item, compact = false, mergeDirection = 'horizontal', isDragging = false, draggedId = null, dropTargetId = null, onDragStart = null, onDragOver = null, onDrop = null }) => {
+const ModuleItem = ({ item, compact = false, mergeDirection = 'horizontal', isDragging = false, draggedId = null, dropTargetId = null, onDragStart = null, onDragOver = null, onDrop = null, groupingStrategy = 'default' }) => {
     // item.weight is now treated as font-size in px. Default to 10px if not set.
     const fontSize = item.weight || 10;
     const isCurrentlyDragged = draggedId === item.id;
@@ -14,12 +14,13 @@ const ModuleItem = ({ item, compact = false, mergeDirection = 'horizontal', isDr
 
     return (
         <div
-            className={`mb-px rounded p-px break-inside-avoid cursor-grab active:cursor-grabbing transition-all relative
+            className={`mb-px last:mb-0 rounded px-px py-0 break-inside-avoid transition-all relative
+                ${isDragging ? 'cursor-grabbing' : (groupingStrategy === 'manual' ? 'cursor-grab' : 'cursor-text')}
                 ${isCurrentlyDragged ? 'opacity-20 grayscale' : ''} 
                 ${isDropTarget && draggedId && draggedId !== item.id ? 'ring-2 ring-green-500 ring-offset-2 ring-offset-[#111] z-50 scale-[1.02]' : ''}
             `}
             style={{ pageBreakInside: 'avoid', breakInside: 'avoid-column' }}
-            draggable={!isDragging}
+            draggable={groupingStrategy === 'manual' && !isDragging}
             onDragStart={(e) => onDragStart && onDragStart(item.id, e)}
             onDragOver={(e) => {
                 e.preventDefault();
@@ -110,7 +111,7 @@ const ModuleItem = ({ item, compact = false, mergeDirection = 'horizontal', isDr
     )
 }
 
-const A4Page = ({ pageNumber, items, sheetName, mergeDirection = 'horizontal', isDragging = false, draggedId = null, dropTargetId = null, onDragStart = null, onDragOver = null, onDrop = null }) => {
+const A4Page = ({ pageNumber, items, sheetName, mergeDirection = 'horizontal', isDragging = false, draggedId = null, dropTargetId = null, onDragStart = null, onDragOver = null, onDrop = null, groupingStrategy }) => {
     return (
         <div
             id={`page-${pageNumber}`}
@@ -122,7 +123,7 @@ const A4Page = ({ pageNumber, items, sheetName, mergeDirection = 'horizontal', i
 
             {/* Page Content */}
             <div
-                className="flex-1 p-[1.5mm] text-slate-900 overflow-hidden print:p-[1.5mm] print:h-[290mm] print:overflow-hidden"
+                className="flex-1 p-[1.5mm] pb-0 text-slate-900 overflow-hidden print:p-[1.5mm] print:h-[290mm] print:overflow-hidden"
                 style={{ maxHeight: 'calc(297mm - 6mm)' }}
             >
                 <div
@@ -134,7 +135,7 @@ const A4Page = ({ pageNumber, items, sheetName, mergeDirection = 'horizontal', i
                     }}
                 >
                     {items.map((item, i) => (
-                        <ModuleItem key={`${item.id}-${i}`} item={item} mergeDirection={mergeDirection} isDragging={isDragging} draggedId={draggedId} dropTargetId={dropTargetId} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} />
+                        <ModuleItem key={`${item.id}-${i}`} item={item} mergeDirection={mergeDirection} isDragging={isDragging} draggedId={draggedId} dropTargetId={dropTargetId} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} groupingStrategy={groupingStrategy} />
                     ))}
                 </div>
             </div>
@@ -148,7 +149,7 @@ const A4Page = ({ pageNumber, items, sheetName, mergeDirection = 'horizontal', i
     );
 };
 
-const OverflowSection = ({ items, isDragging = false, draggedId = null, dropTargetId = null, onDragStart = null, onDragOver = null, onDrop = null }) => {
+const OverflowSection = ({ items, isDragging = false, draggedId = null, dropTargetId = null, onDragStart = null, onDragOver = null, onDrop = null, groupingStrategy }) => {
     if (items.length === 0) return null;
     return (
         <div className="mt-16 p-8 border border-dashed border-red-900 bg-red-950/10 relative print:hidden">
@@ -163,7 +164,7 @@ const OverflowSection = ({ items, isDragging = false, draggedId = null, dropTarg
                 <div className="columns-2 gap-6 space-y-4">
                     {items.map((item, i) => (
                         <div key={i} className="bg-white p-1 border border-slate-200 shadow-[2px_2px_0px_rgba(153,27,27,0.2)] break-inside-avoid">
-                            <ModuleItem item={item} isDragging={isDragging} draggedId={draggedId} dropTargetId={dropTargetId} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} />
+                            <ModuleItem item={item} isDragging={isDragging} draggedId={draggedId} dropTargetId={dropTargetId} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} groupingStrategy={groupingStrategy} />
                         </div>
                     ))}
                 </div>
@@ -201,7 +202,7 @@ const MeasurementContainer = ({ items, onMeasure, mergeDirection = 'horizontal' 
         // Small delay to ensure images/fonts load and layout stabilizes
         const timer = setTimeout(() => {
             measure();
-        }, 100);
+        }, 200);
 
         return () => clearTimeout(timer);
 
@@ -232,7 +233,7 @@ const MeasurementContainer = ({ items, onMeasure, mergeDirection = 'horizontal' 
 };
 
 const SheetPreview = () => {
-    const { sheetName, isGroupingMode, setHighlightNameInput, pages, overflow, itemsToMeasure, updateMeasuredHeights, mergeDirection, swapNodePositions, hasManualOrder, resetToAutoOrder } = useSheet();
+    const { sheetName, isGroupingMode, setHighlightNameInput, pages, overflow, itemsToMeasure, updateMeasuredHeights, mergeDirection, swapNodePositions, hasManualOrder, resetToAutoOrder, groupingStrategy } = useSheet();
     const { showPreview } = useTutorial();
     const [showTooltip, setShowTooltip] = useState(false);
     const [draggedId, setDraggedId] = useState(null);
@@ -245,6 +246,14 @@ const SheetPreview = () => {
 
     // Handle drag start
     const handleDragStart = (itemId, event) => {
+        // Only allow drag if we are in Manual Sort mode
+        // hasManualOrder might be true if we just engaged it, OR if explicitly set to 'manual' (which we need to ensure triggers hasManualOrder or check groupingStrategy)
+        // Checking groupingStrategy is safer as per new requirement "4th sorting method called manual"
+        if (groupingStrategy !== 'manual') {
+            event.preventDefault();
+            return;
+        }
+
         const allItems = [...pages[0].items, ...pages[1].items, ...overflow];
         const item = allItems.find(i => i.id === itemId);
         if (!item) return;
@@ -332,26 +341,7 @@ const SheetPreview = () => {
                 </div>
             )}
 
-            {/* Manual Order Warning */}
-            {hasManualOrder && !isGroupingMode && (
-                <div className="sticky top-0 z-50 mb-6 bg-amber-900/90 text-amber-100 border border-amber-500 p-4 shadow-[0_0_20px_rgba(245,158,11,0.3)] flex justify-between items-center print:hidden">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-amber-500/20 px-2 py-1 border border-amber-400 font-bold font-mono text-xl">
-                            M
-                        </div>
-                        <div>
-                            <h3 className="font-bold uppercase tracking-wider text-amber-300">{">> "} MANUAL_SORT_ACTIVE</h3>
-                            <p className="text-xs font-mono text-amber-200">Auto-sort disabled. Drag & drop engaged.</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={resetToAutoOrder}
-                        className="px-4 py-2 bg-amber-500/20 border border-amber-400 text-amber-300 hover:bg-amber-400 hover:text-black transition-all font-bold uppercase tracking-wider text-sm"
-                    >
-                        [ RESTORE_AUTO ]
-                    </button>
-                </div>
-            )}
+
 
             <div className="max-w-[220mm] mx-auto relative z-10 print:max-w-none print:w-full print:mx-0">
                 <div className="flex justify-between items-center mb-8 print:hidden">
@@ -404,13 +394,13 @@ const SheetPreview = () => {
 
                 <div className="print-area drop-shadow-2xl">
                     {/* Page 1 */}
-                    <A4Page pageNumber={1} items={pages[0].items} sheetName={sheetName} mergeDirection={mergeDirection} isDragging={!!draggedId} draggedId={draggedId} dropTargetId={dropTargetId} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} />
+                    <A4Page pageNumber={1} items={pages[0].items} sheetName={sheetName} mergeDirection={mergeDirection} isDragging={!!draggedId} draggedId={draggedId} dropTargetId={dropTargetId} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} groupingStrategy={groupingStrategy} />
 
                     {/* Page 2 */}
-                    <A4Page pageNumber={2} items={pages[1].items} sheetName={sheetName} mergeDirection={mergeDirection} isDragging={!!draggedId} draggedId={draggedId} dropTargetId={dropTargetId} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} />
+                    <A4Page pageNumber={2} items={pages[1].items} sheetName={sheetName} mergeDirection={mergeDirection} isDragging={!!draggedId} draggedId={draggedId} dropTargetId={dropTargetId} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} groupingStrategy={groupingStrategy} />
 
                     {/* Overflow Section */}
-                    <OverflowSection items={overflow} isDragging={!!draggedId} draggedId={draggedId} dropTargetId={dropTargetId} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} />
+                    <OverflowSection items={overflow} isDragging={!!draggedId} draggedId={draggedId} dropTargetId={dropTargetId} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} groupingStrategy={groupingStrategy} />
                 </div>
 
                 {/* Drag Clone - Semi-transparent copy following cursor */}
