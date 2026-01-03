@@ -24,12 +24,19 @@ export const SheetProvider = ({ children }) => {
             const next = new Set(prev);
             if (next.has(id)) {
                 next.delete(id);
-                setItemOrder(order => order.filter(itemId => itemId !== id));
             } else {
                 next.add(id);
-                setItemOrder(order => [...order, id]);
             }
             return next;
+        });
+        setItemOrder(order => {
+            const isCurrentlySelected = selectedItems.has(id);
+            if (isCurrentlySelected) {
+                return order.filter(itemId => itemId !== id);
+            } else {
+                if (order.includes(id)) return order; // Prevent duplicates
+                return [...order, id];
+            }
         });
     };
 
