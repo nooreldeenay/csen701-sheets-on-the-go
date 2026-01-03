@@ -13,6 +13,9 @@ export const SheetProvider = ({ children }) => {
     // Ordered array of selected item IDs (controls display order for drag-swap)
     const [itemOrder, setItemOrder] = useState([]);
 
+    // Track if user has manually reordered items via drag-drop
+    const [hasManualOrder, setHasManualOrder] = useState(false);
+
     // Map of submodule ID -> weight (0.5, 1, 1.5, 2)
     const [weights, setWeights] = useState({});
 
@@ -212,6 +215,16 @@ export const SheetProvider = ({ children }) => {
 
             return newOrder;
         });
+        // Mark that user has engaged manual ordering
+        setHasManualOrder(true);
+    };
+
+    // Reset to automatic packing order
+    const resetToAutoOrder = () => {
+        setHasManualOrder(false);
+        // Clear itemOrder to let layout engine use optimal ordering
+        // Rebuild itemOrder from selectedItems to maintain selection but reset order
+        setItemOrder(Array.from(selectedItems));
     };
 
     // Tutorial Data Injection
@@ -284,8 +297,10 @@ export const SheetProvider = ({ children }) => {
         pages: layout.pages,
         overflow: layout.overflow,
         itemsToMeasure,
-        swapNodePositions // Expose swap function for drag-and-drop
-    }), [selectedItems, weights, customModules, isGroupingMode, groupingSet, lastCreatedGroupId, sheetName, highlightNameInput, tutorialData, layout, measuredHeights, itemsToMeasure, mergeDirection]);
+        swapNodePositions, // Expose swap function for drag-and-drop
+        hasManualOrder, // Expose manual order state
+        resetToAutoOrder // Expose reset function
+    }), [selectedItems, weights, customModules, isGroupingMode, groupingSet, lastCreatedGroupId, sheetName, highlightNameInput, tutorialData, layout, measuredHeights, itemsToMeasure, mergeDirection, hasManualOrder]);
 
     return (
         <SheetContext.Provider value={value}>

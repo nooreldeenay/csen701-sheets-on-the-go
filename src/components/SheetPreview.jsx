@@ -201,7 +201,7 @@ const MeasurementContainer = ({ items, onMeasure, mergeDirection = 'horizontal' 
 };
 
 const SheetPreview = () => {
-    const { sheetName, isGroupingMode, setHighlightNameInput, pages, overflow, itemsToMeasure, updateMeasuredHeights, mergeDirection, swapNodePositions } = useSheet();
+    const { sheetName, isGroupingMode, setHighlightNameInput, pages, overflow, itemsToMeasure, updateMeasuredHeights, mergeDirection, swapNodePositions, hasManualOrder, resetToAutoOrder } = useSheet();
     const { showPreview } = useTutorial();
     const [showTooltip, setShowTooltip] = useState(false);
     const [draggedId, setDraggedId] = useState(null);
@@ -288,6 +288,27 @@ const SheetPreview = () => {
                             <p className="text-xs font-mono text-purple-200">Select items from control panel to fuse.</p>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Manual Order Warning */}
+            {hasManualOrder && !isGroupingMode && (
+                <div className="sticky top-0 z-50 mb-6 bg-amber-900/90 text-amber-100 border border-amber-500 p-4 shadow-[0_0_20px_rgba(245,158,11,0.3)] flex justify-between items-center print:hidden">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-amber-500/20 p-2 border border-amber-400">
+                            <span className="font-bold text-xl">⚠</span>
+                        </div>
+                        <div>
+                            <h3 className="font-bold uppercase tracking-wider text-amber-300">{">> "} MANUAL_ORDER_ACTIVE</h3>
+                            <p className="text-xs font-mono text-amber-200">Automatic packing disabled. Content may not be optimally packed.</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={resetToAutoOrder}
+                        className="px-4 py-2 bg-amber-500/20 border border-amber-400 text-amber-300 hover:bg-amber-400 hover:text-black transition-all font-bold uppercase tracking-wider text-sm"
+                    >
+                        [ RESET_TO_AUTO ]
+                    </button>
                 </div>
             )}
 
