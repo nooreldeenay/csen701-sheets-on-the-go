@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Github, ExternalLink, Cpu, Code, Coffee, Calendar, MapPin, Terminal, User, Mail } from 'lucide-react';
+import { X, Github, ExternalLink, Cpu, Code, Coffee, Calendar, MapPin, Terminal, User, Mail, Link as LinkIcon } from 'lucide-react';
 import { APP_VERSION, APP_DATE } from '../constants';
 
 const AboutModal = ({ isOpen, onClose }) => {

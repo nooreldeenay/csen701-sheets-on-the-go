@@ -10,11 +10,10 @@ const ChangelogModal = ({ isOpen, onClose }) => {
             version: '1.22',
             date: '2026-01-03',
             changes: [
-                'Maximized layout density (SAFE_HEIGHT: 1098px)',
-                'Removed vertical module padding for tighter packing',
-                'Optimized margin logic (last:mb-0)',
-                'Removed floating Manual Mode banner',
-                'Refined print preview margins'
+                'Maximized content density (fit more on page)',
+                'Improved module spacing and alignment',
+                'Removed Manual Mode banner for cleaner preview',
+                'Refined print preview accuracy'
             ]
         },
         {

@@ -182,7 +182,10 @@ const Sidebar = ({ onOpenAbout, onOpenManual, onOpenChangelog }) => {
                         </div>
 
                         <button
-                            onClick={createGroupFromSelection}
+                            onClick={() => {
+                                createGroupFromSelection();
+                                handleTutorialAction('CONFIRM_MERGE');
+                            }}
                             disabled={groupingSet.size < 2}
                             className={`w-full py-2 text-xs font-bold uppercase tracking-widest transition-all
                                 ${groupingSet.size >= 2
@@ -335,6 +338,7 @@ const Sidebar = ({ onOpenAbout, onOpenManual, onOpenChangelog }) => {
                                 {customModules.map(item => (
                                     <div key={item.id} className={`flex flex-col gap-2 p-2 border transition-all
                                             ${item.id === lastCreatedGroupId ? 'border-purple-500 bg-purple-900/10' : 'border-slate-800 bg-[#111]'}
+                                            ${(isGroupingMode && groupingSet.has(item.id)) ? 'bg-purple-900/20 border-purple-500' : ''}
                                             ${overflow?.some(o => o.id === item.id) ? 'animate-pulse-red' : ''}
                                         `}>
                                         <div className="flex items-start gap-2">
@@ -482,25 +486,42 @@ const Sidebar = ({ onOpenAbout, onOpenManual, onOpenChangelog }) => {
                                     {mod.submodules.map(sub => (
                                         <div
                                             key={sub.id}
-                                            className={`p-2 flex items-start gap-2 border-b border-slate-800/50 last:border-0 hover:bg-[#111] group
-                                                ${overflow?.some(o => o.id === sub.id) ? 'bg-red-900/10' : ''}`}
-                                        >
-                                            <button
-                                                onClick={() => {
-                                                    if (isGroupingMode) toggleOptionInGroup(sub.id);
-                                                    else {
-                                                        toggleSelection(sub.id);
-                                                        // Tutorial Check
-                                                        if (tutorialStep === 8 && mod.id === 'tut-basics') {
-                                                            const nextSelection = new Set(selectedItems);
-                                                            if (selectedItems.has(sub.id)) nextSelection.delete(sub.id);
-                                                            else nextSelection.add(sub.id);
-                                                            if (nextSelection.has('tut-1') && nextSelection.has('tut-2')) {
-                                                                handleTutorialAction('SELECT_ALL_MODULES');
-                                                            }
+                                            onClick={() => {
+                                                if (isGroupingMode) {
+                                                    toggleOptionInGroup(sub.id);
+                                                    // Tutorial Check for Selection Step (Step 5) - context: Merge Mode Active
+                                                    if (tutorialStep === 5 && (sub.id === 'tut-1' || sub.id === 'tut-2')) {
+                                                        const nextSize = groupingSet.has(sub.id) ? groupingSet.size - 1 : groupingSet.size + 1;
+                                                        if (nextSize >= 2) {
+                                                            handleTutorialAction('SELECT_ITEM', nextSize);
                                                         }
                                                     }
-                                                }}
+                                                }
+                                                else {
+                                                    toggleSelection(sub.id);
+                                                    // Tutorial Check (Step 8: Enable content)
+                                                    if (tutorialStep === 8 && mod.id === 'tut-basics') {
+                                                        const nextSelection = new Set(selectedItems);
+                                                        if (selectedItems.has(sub.id)) nextSelection.delete(sub.id);
+                                                        else nextSelection.add(sub.id);
+
+                                                        // Check if both are selected
+                                                        if (nextSelection.has('tut-1') && nextSelection.has('tut-2')) {
+                                                            handleTutorialAction('SELECT_TUTORIAL_ITEM', ['tut-1', 'tut-2']);
+                                                        }
+                                                    }
+                                                }
+                                            }}
+                                            className={`p-2 flex items-start gap-2 border-b border-slate-800/50 last:border-0 hover:bg-[#111] group cursor-pointer transition-all
+                                                ${overflow?.some(o => o.id === sub.id) ? 'bg-red-900/10' : ''}
+                                                ${(isGroupingMode && groupingSet.has(sub.id))
+                                                    ? 'bg-purple-900/20 shadow-[inset_2px_0_0_0_rgb(168,85,247)]'
+                                                    : ((tutorialStep === 5 && (sub.id === 'tut-1' || sub.id === 'tut-2'))
+                                                        ? 'border border-green-500 shadow-[0_0_10px_rgba(74,222,128,0.2)] bg-green-900/20'
+                                                        : '')}
+                                            `}
+                                        >
+                                            <button
                                                 className={`mt-1 font-mono text-xs ${isGroupingMode
                                                     ? (groupingSet.has(sub.id) ? "text-purple-400" : "text-slate-700 hover:text-purple-300")
                                                     : (selectedItems.has(sub.id) ? "text-green-400" : "text-slate-700 hover:text-green-300")
@@ -563,7 +584,7 @@ const Sidebar = ({ onOpenAbout, onOpenManual, onOpenChangelog }) => {
                     </button>
                 </div>
             </div>
-        </aside>
+        </aside >
     );
 };
 
