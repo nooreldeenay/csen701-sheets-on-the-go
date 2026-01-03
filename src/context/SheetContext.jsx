@@ -112,6 +112,7 @@ export const SheetProvider = ({ children }) => {
     const [groupingSet, setGroupingSet] = useState(new Set());
     const [lastCreatedGroupId, setLastCreatedGroupId] = useState(null); // For UX highlighting
     const [mergeDirection, setMergeDirection] = useState('horizontal'); // 'horizontal' or 'vertical'
+    const [groupingStrategy, setGroupingStrategy] = useState('default'); // 'default', 'compact', 'type'
 
     const toggleGroupingMode = () => {
         setIsGroupingMode(prev => {
@@ -217,6 +218,11 @@ export const SheetProvider = ({ children }) => {
         });
         // Mark that user has engaged manual ordering
         setHasManualOrder(true);
+
+        // Auto-disable auto-sorting strategies to respect user's manual drop
+        if (groupingStrategy !== 'default') {
+            setGroupingStrategy('default');
+        }
     };
 
     // Reset to automatic packing order
@@ -267,8 +273,8 @@ export const SheetProvider = ({ children }) => {
                 submodules: tutorialData
             });
         }
-        return calculateLayout(allModules, selectedItems, weights, measuredHeights, itemOrder);
-    }, [modules, customModules, tutorialData, selectedItems, weights, measuredHeights, itemOrder]);
+        return calculateLayout(allModules, selectedItems, weights, measuredHeights, itemOrder, groupingStrategy);
+    }, [modules, customModules, tutorialData, selectedItems, weights, measuredHeights, itemOrder, groupingStrategy]);
 
     const value = useMemo(() => ({
         modules,
@@ -291,6 +297,7 @@ export const SheetProvider = ({ children }) => {
         lastCreatedGroupId,
         mergeDirection, // Expose merge direction
         toggleMergeDirection, // Expose toggle function
+        groupingStrategy, setGroupingStrategy, // Expose grouping strategy
         sheetName, setSheetName,
         highlightNameInput, setHighlightNameInput,
         measuredHeights, updateMeasuredHeights, // Measurements

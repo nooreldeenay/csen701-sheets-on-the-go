@@ -6,16 +6,18 @@ import { calculateLayout } from '../utils/layoutEngine';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 
-const ModuleItem = ({ item, compact = false, mergeDirection = 'horizontal', isDragging = false, draggedId = null, onDragStart = null, onDragOver = null, onDrop = null }) => {
+const ModuleItem = ({ item, compact = false, mergeDirection = 'horizontal', isDragging = false, draggedId = null, dropTargetId = null, onDragStart = null, onDragOver = null, onDrop = null }) => {
     // item.weight is now treated as font-size in px. Default to 10px if not set.
     const fontSize = item.weight || 10;
     const isCurrentlyDragged = draggedId === item.id;
+    const isDropTarget = dropTargetId === item.id;
 
     return (
         <div
-            className={`mb-px rounded p-px break-inside-avoid cursor-grab active:cursor-grabbing transition-all ${
-                isCurrentlyDragged ? 'opacity-30' : ''
-            } ${draggedId && draggedId !== item.id ? 'hover:ring-2 hover:ring-blue-400 hover:ring-inset' : ''}`}
+            className={`mb-px rounded p-px break-inside-avoid cursor-grab active:cursor-grabbing transition-all relative
+                ${isCurrentlyDragged ? 'opacity-20 grayscale' : ''} 
+                ${isDropTarget && draggedId && draggedId !== item.id ? 'ring-2 ring-green-500 ring-offset-2 ring-offset-[#111] z-50 scale-[1.02]' : ''}
+            `}
             style={{ pageBreakInside: 'avoid', breakInside: 'avoid-column' }}
             draggable={!isDragging}
             onDragStart={(e) => onDragStart && onDragStart(item.id, e)}
@@ -32,6 +34,13 @@ const ModuleItem = ({ item, compact = false, mergeDirection = 'horizontal', isDr
                 e.preventDefault();
             }}
         >
+            {isDropTarget && draggedId && draggedId !== item.id && (
+                <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center z-50 pointer-events-none rounded">
+                    <span className="text-green-900 font-bold bg-green-400 px-2 py-1 rounded text-[10px] shadow-sm uppercase tracking-wider">
+                        Swap Here
+                    </span>
+                </div>
+            )}
             {!compact && (
                 <div className="font-bold text-slate-900 mb-0 flex justify-between items-baseline px-0.5 border-b border-slate-200">
                     <span className="text-[8px] leading-tight">{item.title}</span>
@@ -69,6 +78,24 @@ const ModuleItem = ({ item, compact = false, mergeDirection = 'horizontal', isDr
                     </div>
                 )}
 
+                {item.type === 'table' && (
+                    <div className="w-full overflow-hidden">
+                        <table className="w-full border-collapse border border-slate-400 text-slate-900 leading-tight" style={{ fontSize: '0.9em' }}>
+                            <tbody>
+                                {item.content.split('\n').filter(r => r.trim()).map((row, rIdx) => (
+                                    <tr key={rIdx}>
+                                        {row.split('|').map((cell, cIdx) => (
+                                            <td key={cIdx} className={`border border-slate-300 px-1 py-0.5 ${rIdx === 0 ? 'bg-slate-100 font-bold' : ''}`}>
+                                                {cell.trim()}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
                 {item.type === 'row' && (
                     <div className={(item.mergeDirection || mergeDirection) === 'vertical' ? 'flex flex-col gap-2' : 'flex gap-2'}>
                         {item.content.map((subItem, idx) => (
@@ -83,7 +110,7 @@ const ModuleItem = ({ item, compact = false, mergeDirection = 'horizontal', isDr
     )
 }
 
-const A4Page = ({ pageNumber, items, sheetName, mergeDirection = 'horizontal', isDragging = false, draggedId = null, onDragStart = null, onDragOver = null, onDrop = null }) => {
+const A4Page = ({ pageNumber, items, sheetName, mergeDirection = 'horizontal', isDragging = false, draggedId = null, dropTargetId = null, onDragStart = null, onDragOver = null, onDrop = null }) => {
     return (
         <div
             id={`page-${pageNumber}`}
@@ -107,7 +134,7 @@ const A4Page = ({ pageNumber, items, sheetName, mergeDirection = 'horizontal', i
                     }}
                 >
                     {items.map((item, i) => (
-                        <ModuleItem key={`${item.id}-${i}`} item={item} mergeDirection={mergeDirection} isDragging={isDragging} draggedId={draggedId} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} />
+                        <ModuleItem key={`${item.id}-${i}`} item={item} mergeDirection={mergeDirection} isDragging={isDragging} draggedId={draggedId} dropTargetId={dropTargetId} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} />
                     ))}
                 </div>
             </div>
@@ -121,7 +148,7 @@ const A4Page = ({ pageNumber, items, sheetName, mergeDirection = 'horizontal', i
     );
 };
 
-const OverflowSection = ({ items, isDragging = false, draggedId = null, onDragStart = null, onDragOver = null, onDrop = null }) => {
+const OverflowSection = ({ items, isDragging = false, draggedId = null, dropTargetId = null, onDragStart = null, onDragOver = null, onDrop = null }) => {
     if (items.length === 0) return null;
     return (
         <div className="mt-16 p-8 border border-dashed border-red-900 bg-red-950/10 relative print:hidden">
@@ -136,7 +163,7 @@ const OverflowSection = ({ items, isDragging = false, draggedId = null, onDragSt
                 <div className="columns-2 gap-6 space-y-4">
                     {items.map((item, i) => (
                         <div key={i} className="bg-white p-1 border border-slate-200 shadow-[2px_2px_0px_rgba(153,27,27,0.2)] break-inside-avoid">
-                            <ModuleItem item={item} isDragging={isDragging} draggedId={draggedId} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} />
+                            <ModuleItem item={item} isDragging={isDragging} draggedId={draggedId} dropTargetId={dropTargetId} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} />
                         </div>
                     ))}
                 </div>
@@ -163,16 +190,20 @@ const MeasurementContainer = ({ items, onMeasure, mergeDirection = 'horizontal' 
                     // Get height including margin (mb-px)
                     // mb-px is 1px.
                     const rect = node.getBoundingClientRect();
-                    // We add a small buffer (2px) to be safe against sub-pixel rounding and margins
-                    newHeights[id] = rect.height + 2;
+                    // Use Math.ceil to avoid sub-pixel underestimation errors which cause overflow
+                    // +1 for the margin-bottom (mb-px)
+                    newHeights[id] = Math.ceil(rect.height) + 1;
                 }
             }
             onMeasure(newHeights);
         };
 
-        // Small delay to ensure images/fonts load? 
-        // For now, sync measurement.
-        measure();
+        // Small delay to ensure images/fonts load and layout stabilizes
+        const timer = setTimeout(() => {
+            measure();
+        }, 100);
+
+        return () => clearTimeout(timer);
 
     }, [items, onMeasure, mergeDirection]);
 
@@ -186,7 +217,7 @@ const MeasurementContainer = ({ items, onMeasure, mergeDirection = 'horizontal' 
             ref={containerRef}
             className="fixed top-0 left-0 -z-50 opacity-0 pointer-events-none bg-white text-slate-900"
             style={{
-                width: '103mm',
+                width: '102.5mm', // Slightly narrower than 103mm to ensure text wrapping is conservative (over-estimates height)
                 visibility: 'hidden',
                 position: 'fixed'
             }}
@@ -207,6 +238,7 @@ const SheetPreview = () => {
     const [draggedId, setDraggedId] = useState(null);
     const [dragClonePos, setDragClonePos] = useState({ x: 0, y: 0 });
     const [draggedItem, setDraggedItem] = useState(null);
+    const [dropTargetId, setDropTargetId] = useState(null);
 
     // DEBUG: Monitor layout flow
     console.log(`[PREVIEW] P1:${pages[0].items.length} P2:${pages[1].items.length} OVER:${overflow.length}`);
@@ -226,6 +258,9 @@ const SheetPreview = () => {
     // Handle drag over
     const handleDragOver = (itemId, event) => {
         setDragClonePos({ x: event.clientX, y: event.clientY });
+        if (itemId !== draggedId) {
+            setDropTargetId(itemId);
+        }
     };
 
     // Handle drop
@@ -239,19 +274,25 @@ const SheetPreview = () => {
 
         setDraggedId(null);
         setDraggedItem(null);
+        setDropTargetId(null);
     };
 
-    // Handle ESC key to cancel drag
+    // Handle ESC key or Drag End to cancel
     useEffect(() => {
-        const handleKeyDown = (e) => {
-            if (e.key === 'Escape' && draggedId) {
+        const handleCancel = (e) => {
+            if ((e.type === 'keydown' && e.key === 'Escape') || e.type === 'dragend') {
                 setDraggedId(null);
                 setDraggedItem(null);
+                setDropTargetId(null);
             }
         };
 
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        window.addEventListener('keydown', handleCancel);
+        window.addEventListener('dragend', handleCancel);
+        return () => {
+            window.removeEventListener('keydown', handleCancel);
+            window.removeEventListener('dragend', handleCancel);
+        };
     }, [draggedId]);
 
     // Handle Print
@@ -295,19 +336,19 @@ const SheetPreview = () => {
             {hasManualOrder && !isGroupingMode && (
                 <div className="sticky top-0 z-50 mb-6 bg-amber-900/90 text-amber-100 border border-amber-500 p-4 shadow-[0_0_20px_rgba(245,158,11,0.3)] flex justify-between items-center print:hidden">
                     <div className="flex items-center gap-3">
-                        <div className="bg-amber-500/20 p-2 border border-amber-400">
-                            <span className="font-bold text-xl">⚠</span>
+                        <div className="bg-amber-500/20 px-2 py-1 border border-amber-400 font-bold font-mono text-xl">
+                            M
                         </div>
                         <div>
-                            <h3 className="font-bold uppercase tracking-wider text-amber-300">{">> "} MANUAL_ORDER_ACTIVE</h3>
-                            <p className="text-xs font-mono text-amber-200">Automatic packing disabled. Content may not be optimally packed.</p>
+                            <h3 className="font-bold uppercase tracking-wider text-amber-300">{">> "} MANUAL_SORT_ACTIVE</h3>
+                            <p className="text-xs font-mono text-amber-200">Auto-sort disabled. Drag & drop engaged.</p>
                         </div>
                     </div>
                     <button
                         onClick={resetToAutoOrder}
                         className="px-4 py-2 bg-amber-500/20 border border-amber-400 text-amber-300 hover:bg-amber-400 hover:text-black transition-all font-bold uppercase tracking-wider text-sm"
                     >
-                        [ RESET_TO_AUTO ]
+                        [ RESTORE_AUTO ]
                     </button>
                 </div>
             )}
@@ -363,32 +404,32 @@ const SheetPreview = () => {
 
                 <div className="print-area drop-shadow-2xl">
                     {/* Page 1 */}
-                    <A4Page pageNumber={1} items={pages[0].items} sheetName={sheetName} mergeDirection={mergeDirection} isDragging={!!draggedId} draggedId={draggedId} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} />
+                    <A4Page pageNumber={1} items={pages[0].items} sheetName={sheetName} mergeDirection={mergeDirection} isDragging={!!draggedId} draggedId={draggedId} dropTargetId={dropTargetId} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} />
 
                     {/* Page 2 */}
-                    <A4Page pageNumber={2} items={pages[1].items} sheetName={sheetName} mergeDirection={mergeDirection} isDragging={!!draggedId} draggedId={draggedId} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} />
+                    <A4Page pageNumber={2} items={pages[1].items} sheetName={sheetName} mergeDirection={mergeDirection} isDragging={!!draggedId} draggedId={draggedId} dropTargetId={dropTargetId} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} />
 
                     {/* Overflow Section */}
-                    <OverflowSection items={overflow} isDragging={!!draggedId} draggedId={draggedId} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} />
+                    <OverflowSection items={overflow} isDragging={!!draggedId} draggedId={draggedId} dropTargetId={dropTargetId} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} />
                 </div>
 
                 {/* Drag Clone - Semi-transparent copy following cursor */}
                 {draggedItem && draggedId && (
                     <div
-                        className="fixed pointer-events-none z-50 opacity-50 bg-white border-2 border-blue-400 shadow-2xl rounded"
+                        className="fixed pointer-events-none z-50 opacity-90 bg-slate-900 text-white border-2 border-green-500 shadow-[0_0_30px_rgba(74,222,128,0.3)] rounded"
                         style={{
                             left: `${dragClonePos.x}px`,
                             top: `${dragClonePos.y}px`,
                             transform: 'translate(-50%, -50%)',
                             maxWidth: '200px',
-                            padding: '8px',
-                            fontSize: `${draggedItem.weight || 10}px`
+                            padding: '12px',
                         }}
                     >
-                        <div className="font-bold text-xs text-slate-600 mb-1">{draggedItem.title}</div>
-                        <div className="text-xs text-slate-600 truncate">
-                            {draggedItem.type === 'text' ? draggedItem.content.substring(0, 50) : `[${draggedItem.type.toUpperCase()}]`}
+                        <div className="font-bold text-xs text-green-400 mb-1 flex items-center gap-2">
+                            <span>MOVE_MODULE</span>
+                            <span className="text-[10px] bg-green-900/50 px-1 rounded">{draggedId}</span>
                         </div>
+                        <div className="text-sm font-bold border-t border-slate-700 pt-1 mt-1">{draggedItem.title}</div>
                     </div>
                 )}
             </div>

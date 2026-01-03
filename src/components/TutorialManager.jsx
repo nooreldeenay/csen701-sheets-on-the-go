@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTutorial } from '../context/TutorialContext';
 import { useSheet } from '../context/SheetContext';
+import { APP_VERSION } from '../constants';
 import Typewriter from './Typewriter';
 
 const TutorialManager = () => {
@@ -152,10 +153,9 @@ const TutorialManager = () => {
                     />
                     <span className="animate-pulse">_</span>
                 </div>
-                {waitingForInput && (
-                    <div className="mt-2 text-[10px] text-green-700 font-mono animate-pulse uppercase">
-                        [PRESS ENTER TO CONTINUE]
-                    </div>
+                {waitingForInput && <div className="text-[10px] text-green-700 font-mono text-center mt-2 group-hover:text-green-500 transition-colors">
+                    CORE SYSTEM v{APP_VERSION}
+                </div>
                 )}
 
                 {/* Skip Hint */}

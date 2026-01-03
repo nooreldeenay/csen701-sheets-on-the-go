@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, Terminal, Mail, Link as LinkIcon, ExternalLink, User, Github } from 'lucide-react';
+import { X, Github, ExternalLink, Cpu, Code, Coffee, Calendar, MapPin, Terminal, User } from 'lucide-react';
+import { APP_VERSION, APP_DATE } from '../constants';
 
 const AboutModal = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
@@ -153,12 +154,27 @@ const AboutModal = ({ isOpen, onClose }) => {
                                 </div>
                             </div>
 
-                            {/* Stats */}
                             <div className='grid grid-cols-2 gap-2 text-xs text-green-700 pt-2 border-t border-green-900/30'>
                                 <div>COMMITS: 517</div>
                                 <div>UPTIME: 99.9%</div>
                                 <div>COFFEE: INFINITE</div>
                                 <div>BUGS: 0 (KNOWN)</div>
+                            </div>
+
+                            {/* Contributors */}
+                            <h3 className="text-green-500 font-bold mt-6 mb-2 uppercase border-b border-green-900/50 pb-1 w-fit">
+                                {">>"} CONTRIBUTORS
+                            </h3>
+                            <div className="space-y-2">
+                                <div className="p-2 border border-green-900/30 bg-green-900/5 flex justify-between items-center group hover:bg-green-900/10 transition-colors">
+                                    <div>
+                                        <div className="font-bold text-green-400 text-xs">itsfadymate</div>
+                                        <div className="text-[10px] text-green-700 uppercase">Feature: Vertical Merge & Drag/Drop</div>
+                                    </div>
+                                    <a href="https://github.com/itsfadymate" target="_blank" rel="noopener noreferrer" className="text-green-800 group-hover:text-green-500">
+                                        <ExternalLink size={12} />
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     )}

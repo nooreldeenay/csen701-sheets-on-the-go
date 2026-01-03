@@ -22,6 +22,7 @@ const AppContent = () => {
   );
 };
 
+// Main App Component
 function App() {
   return (
     <TutorialProvider>

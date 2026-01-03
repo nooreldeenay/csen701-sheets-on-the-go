@@ -6,7 +6,7 @@
 
 const COLUMNS_PER_PAGE = 2; // 2 columns
 const PAGE_HEIGHT_PX = 1122; // A4 @ 96 DPI (approx). Let's be conservative: 1000px safe area.
-const SAFE_HEIGHT = 1085; // ~287mm (297mm - 3mm padding - margins). Prevents "3rd column" overflow.
+const SAFE_HEIGHT = 1092; // Maximize usage of ~1099px container, leaving minimal safety buffer
 
 // Estimate height of a module
 const estimateHeight = (submodule, fontSize = 10) => {
@@ -26,6 +26,10 @@ const estimateHeight = (submodule, fontSize = 10) => {
     } else if (submodule.type === 'code') {
         const lines = submodule.content.split('\n').length;
         baseHeight += lines * (13 * scale); // Safer code block height
+    } else if (submodule.type === 'table') {
+        // Estimate based on rows in the pipe-separated content
+        const rows = submodule.content.split('\n').filter(r => r.trim());
+        baseHeight += (rows.length + 1) * (18 * scale); // +1 for header overhead/padding
     } else if (submodule.type === 'row') {
         // Estimate height of a row container
         const numItems = submodule.content.length || 1;
@@ -78,7 +82,7 @@ export const getFlattenedItems = (modules, selectedIds, weights, itemOrder = [])
         }
     });
 
-    // If itemOrder is provided and has items, use it to order the results
+    // If itemOrder is provided and has items, use it to order the results (Standard/Default behavior)
     if (itemOrder && itemOrder.length > 0) {
         itemOrder.forEach(id => {
             if (itemMap.has(id)) {
@@ -99,24 +103,33 @@ export const getFlattenedItems = (modules, selectedIds, weights, itemOrder = [])
     return selectedItems;
 };
 
-export const calculateLayout = (modules, selectedIds, weights, measuredHeights = {}, itemOrder = []) => {
+export const calculateLayout = (modules, selectedIds, weights, measuredHeights = {}, itemOrder = [], groupingStrategy = 'default') => {
     // 1. Flatten selected submodules
-    // Note: We used to do this here, but now we assume we might want them separate. 
-    // Actually, let's reuse the helper for consistency, OR expect the caller to pass flattened items?
-    // To keep API simple, we'll call the helper, but then map estimateHeight on top.
-
     const baseItems = getFlattenedItems(modules, selectedIds, weights, itemOrder);
 
     // 2. Add Heights
-    const sizedItems = baseItems.map(item => ({
+    let sizedItems = baseItems.map(item => ({
         ...item,
         estimatedHeight: measuredHeights[item.id]
             ? measuredHeights[item.id]
             : estimateHeight(item, item.weight)
     }));
 
-    // 3. Preserve user order instead of sorting by height
-    // Use the order from itemOrder (already applied in getFlattenedItems)
+    // 3. Apply Grouping Strategy
+    if (groupingStrategy === 'compact') {
+        // Sort by Height Descending (First Fit Decreasing algorithm)
+        sizedItems.sort((a, b) => b.estimatedHeight - a.estimatedHeight);
+    } else if (groupingStrategy === 'type') {
+        // Sort by Type, then keep relative order
+        const typeOrder = { 'formula': 1, 'code': 2, 'table': 3, 'image': 4, 'text': 5, 'row': 6 };
+        sizedItems.sort((a, b) => {
+            const tA = typeOrder[a.type] || 99;
+            const tB = typeOrder[b.type] || 99;
+            return tA - tB;
+        });
+    }
+    // 'default' uses the itemOrder passed into getFlattenedItems, so no extra sort needed.
+
     const orderedItems = sizedItems;
 
     // Define 4 discrete columns (Bin Packing)
