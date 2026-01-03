@@ -120,7 +120,7 @@ const BootSequence = () => {
 
                 {/* Header */}
                 <div className="flex justify-between items-center border-b border-green-900 pb-2 mb-4">
-                    <span className="text-green-500 font-bold">>> BOOT_SEQUENCE.EXE</span>
+                    <span className="text-green-500 font-bold"> BOOT_SEQUENCE.EXE</span>
                     <span className="text-green-700 text-xs">MEM: 640K OK</span>
                 </div>
 
@@ -145,7 +145,7 @@ const BootSequence = () => {
                 {isPromptVisible && (
                     <div className="mt-4 border-t border-green-900 pt-4 animate-in fade-in duration-500">
                         <p className="mb-2 text-lg font-bold text-green-500">
-                            <span className="mr-2">>></span>
+                            <span className="mr-2"></span>
                             <Typewriter
                                 text="INITIALIZE TUTORIAL PROTOCOL? [Y/N]"
                                 speed={5}
