@@ -7,6 +7,15 @@ const ChangelogModal = ({ isOpen, onClose }) => {
 
     const changelog = [
         {
+            version: '1.3',
+            date: '2026-01-03',
+            changes: [
+                'Enhanced Tutorial & Lecture Knowledge Base',
+                'Added Arduino Nano RP2040 Connect Datasheet',
+                'Refined content density and formatting'
+            ]
+        },
+        {
             version: '1.22',
             date: '2026-01-03',
             changes: [
