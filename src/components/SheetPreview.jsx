@@ -241,6 +241,15 @@ const SheetPreview = () => {
     const [draggedItem, setDraggedItem] = useState(null);
     const [dropTargetId, setDropTargetId] = useState(null);
 
+    // Zoom State
+    const [zoom, setZoom] = useState(1);
+    const adjustZoom = (delta) => {
+        setZoom(prev => {
+            const newZoom = Math.round((prev + delta) * 10) / 10;
+            return Math.max(0.5, Math.min(2.0, newZoom));
+        });
+    };
+
     // DEBUG: Monitor layout flow
     console.log(`[PREVIEW] P1:${pages[0].items.length} P2:${pages[1].items.length} OVER:${overflow.length}`);
 
@@ -306,7 +315,10 @@ const SheetPreview = () => {
 
     // Handle Print
     const handlePrint = () => {
-        window.print();
+        setZoom(1);
+        setTimeout(() => {
+            window.print();
+        }, 100);
     };
 
     if (!showPreview) {
@@ -344,6 +356,8 @@ const SheetPreview = () => {
 
 
             <div className="max-w-[220mm] mx-auto relative z-10 print:max-w-none print:w-full print:mx-0">
+
+                {/* Header (Static) */}
                 <div className="flex justify-between items-center mb-8 print:hidden">
                     <div className="space-y-1">
                         <h1 className="text-xl font-bold text-green-500 uppercase tracking-widest flex items-center gap-2">
@@ -357,71 +371,99 @@ const SheetPreview = () => {
                         )}
                     </div>
 
-                    <div
-                        className="relative inline-block"
-                        onMouseEnter={() => {
-                            if (!sheetName.trim()) {
-                                setHighlightNameInput(true);
-                                setShowTooltip(true);
-                            }
-                        }}
-                        onMouseLeave={() => {
-                            setHighlightNameInput(false);
-                            setShowTooltip(false);
-                        }}
-                    >
-                        <button
-                            onClick={handlePrint}
-                            disabled={!sheetName.trim()}
-                            className={`flex items-center gap-2 px-6 py-2 border font-bold uppercase tracking-wider transition-all
-                                ${!sheetName.trim()
-                                    ? 'bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed'
-                                    : 'bg-green-900/20 text-green-400 border-green-500/50 hover:bg-green-400 hover:text-black hover:shadow-[0_0_15px_rgba(74,222,128,0.5)]'
-                                }`}
-                        >
-                            <span>[ PRINT_SHEET ]</span>
-                        </button>
-
-                        {/* Tooltip */}
-                        {showTooltip && (
-                            <div className="absolute top-full right-0 mt-2 w-48 bg-black border border-orange-500 text-orange-500 text-xs p-2 shadow-lg z-50">
-                                <p className="font-bold">{">> "} ERROR: NAME_MISSING</p>
-                                <p>Please name your sheet in the sidebar to proceed.</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                <div className="print-area drop-shadow-2xl">
-                    {/* Page 1 */}
-                    <A4Page pageNumber={1} items={pages[0].items} sheetName={sheetName} mergeDirection={mergeDirection} isDragging={!!draggedId} draggedId={draggedId} dropTargetId={dropTargetId} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} groupingStrategy={groupingStrategy} />
-
-                    {/* Page 2 */}
-                    <A4Page pageNumber={2} items={pages[1].items} sheetName={sheetName} mergeDirection={mergeDirection} isDragging={!!draggedId} draggedId={draggedId} dropTargetId={dropTargetId} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} groupingStrategy={groupingStrategy} />
-
-                    {/* Overflow Section */}
-                    <OverflowSection items={overflow} isDragging={!!draggedId} draggedId={draggedId} dropTargetId={dropTargetId} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} groupingStrategy={groupingStrategy} />
-                </div>
-
-                {/* Drag Clone - Semi-transparent copy following cursor */}
-                {draggedItem && draggedId && (
-                    <div
-                        className="fixed pointer-events-none z-50 opacity-90 bg-slate-900 text-white border-2 border-green-500 shadow-[0_0_30px_rgba(74,222,128,0.3)] rounded"
-                        style={{
-                            left: `${dragClonePos.x}px`,
-                            top: `${dragClonePos.y}px`,
-                            transform: 'translate(-50%, -50%)',
-                            maxWidth: '200px',
-                            padding: '12px',
-                        }}
-                    >
-                        <div className="font-bold text-xs text-green-400 mb-1 flex items-center gap-2">
-                            <span>MOVE_MODULE</span>
-                            <span className="text-[10px] bg-green-900/50 px-1 rounded">{draggedId}</span>
+                    <div className="flex items-center gap-4">
+                        {/* Zoom Controls */}
+                        <div className="flex items-center border border-slate-700 bg-black rounded overflow-hidden">
+                            <button
+                                onClick={() => adjustZoom(-0.1)}
+                                className="px-3 py-1 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors font-mono text-xs"
+                            >
+                                [-]
+                            </button>
+                            <span className="px-2 text-xs font-bold text-green-500 font-mono min-w-[3rem] text-center select-none" onClick={() => setZoom(1)} cursor="pointer">
+                                {Math.round(zoom * 100)}%
+                            </span>
+                            <button
+                                onClick={() => adjustZoom(0.1)}
+                                className="px-3 py-1 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors font-mono text-xs"
+                            >
+                                [+]
+                            </button>
                         </div>
-                        <div className="text-sm font-bold border-t border-slate-700 pt-1 mt-1">{draggedItem.title}</div>
+
+                        <div
+                            className="relative inline-block"
+                            onMouseEnter={() => {
+                                if (!sheetName.trim()) {
+                                    setHighlightNameInput(true);
+                                    setShowTooltip(true);
+                                }
+                            }}
+                            onMouseLeave={() => {
+                                setHighlightNameInput(false);
+                                setShowTooltip(false);
+                            }}
+                        >
+                            <button
+                                onClick={handlePrint}
+                                disabled={!sheetName.trim()}
+                                className={`flex items-center gap-2 px-6 py-2 border font-bold uppercase tracking-wider transition-all
+                                    ${!sheetName.trim()
+                                        ? 'bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed'
+                                        : 'bg-green-900/20 text-green-400 border-green-500/50 hover:bg-green-400 hover:text-black hover:shadow-[0_0_15px_rgba(74,222,128,0.5)]'
+                                    }`}
+                            >
+                                <span>[ PRINT_SHEET ]</span>
+                            </button>
+
+                            {/* Tooltip */}
+                            {showTooltip && (
+                                <div className="absolute top-full right-0 mt-2 w-48 bg-black border border-orange-500 text-orange-500 text-xs p-2 shadow-lg z-50">
+                                    <p className="font-bold">{">> "} ERROR: NAME_MISSING</p>
+                                    <p>Please name your sheet in the sidebar to proceed.</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                )}
+                </div>
+
+                {/* Zoom Scalable Wrapper */}
+                <div style={{
+                    transform: `scale(${zoom})`,
+                    transformOrigin: 'top center',
+                    transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                }}>
+                    <div className="print-area drop-shadow-2xl">
+                        {/* Page 1 */}
+                        <A4Page pageNumber={1} items={pages[0].items} sheetName={sheetName} mergeDirection={mergeDirection} isDragging={!!draggedId} draggedId={draggedId} dropTargetId={dropTargetId} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} groupingStrategy={groupingStrategy} />
+
+                        {/* Page 2 */}
+                        <A4Page pageNumber={2} items={pages[1].items} sheetName={sheetName} mergeDirection={mergeDirection} isDragging={!!draggedId} draggedId={draggedId} dropTargetId={dropTargetId} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} groupingStrategy={groupingStrategy} />
+
+                        {/* Overflow Section */}
+                        <OverflowSection items={overflow} isDragging={!!draggedId} draggedId={draggedId} dropTargetId={dropTargetId} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} groupingStrategy={groupingStrategy} />
+                    </div>
+
+                    {/* Drag Clone - Semi-transparent copy following cursor */}
+                    {draggedItem && draggedId && (
+                        <div
+                            className="fixed pointer-events-none z-50 opacity-90 bg-slate-900 text-white border-2 border-green-500 shadow-[0_0_30px_rgba(74,222,128,0.3)] rounded"
+                            style={{
+                                left: `${dragClonePos.x}px`,
+                                top: `${dragClonePos.y}px`,
+                                transform: 'translate(-50%, -50%)',
+                                maxWidth: '200px',
+                                padding: '12px',
+                            }}
+                        >
+                            <div className="font-bold text-xs text-green-400 mb-1 flex items-center gap-2">
+                                <span>MOVE_MODULE</span>
+                                <span className="text-[10px] bg-green-900/50 px-1 rounded">{draggedId}</span>
+                            </div>
+                            <div className="text-sm font-bold border-t border-slate-700 pt-1 mt-1">{draggedItem.title}</div>
+                        </div>
+                    )}
+                </div>
             </div>
 
 
