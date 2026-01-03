@@ -89,4 +89,10 @@
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+
+  .zoom-wrapper {
+    transform: none !important;
+    transition: none !important;
+    margin: 0 !important;
+  }
 }

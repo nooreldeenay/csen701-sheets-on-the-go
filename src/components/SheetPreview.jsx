@@ -216,7 +216,7 @@ const MeasurementContainer = ({ items, onMeasure, mergeDirection = 'horizontal' 
     return (
         <div
             ref={containerRef}
-            className="fixed top-0 left-0 -z-50 opacity-0 pointer-events-none bg-white text-slate-900"
+            className="fixed top-0 left-0 -z-50 opacity-0 pointer-events-none bg-white text-slate-900 print:hidden"
             style={{
                 width: '102.5mm', // Slightly narrower than 103mm to ensure text wrapping is conservative (over-estimates height)
                 visibility: 'hidden',
@@ -334,7 +334,7 @@ const SheetPreview = () => {
         <main className="ml-96 flex-1 min-h-screen bg-[#111] p-8 overflow-y-auto print:ml-0 print:p-0 print:overflow-visible relative font-mono text-slate-300">
 
             {/* Background Decor */}
-            <div className="absolute inset-0 z-0 opacity-5 pointer-events-none"
+            <div className="absolute inset-0 z-0 opacity-5 pointer-events-none print:hidden"
                 style={{ backgroundImage: 'linear-gradient(#222 1px, transparent 1px), linear-gradient(90deg, #222 1px, transparent 1px)', backgroundSize: '40px 40px' }}
             ></div>
 
@@ -428,11 +428,13 @@ const SheetPreview = () => {
                 </div>
 
                 {/* Zoom Scalable Wrapper */}
-                <div style={{
-                    transform: `scale(${zoom})`,
-                    transformOrigin: 'top center',
-                    transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
-                }}>
+                <div
+                    className="zoom-wrapper"
+                    style={{
+                        transform: `scale(${zoom})`,
+                        transformOrigin: 'top center',
+                        transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                    }}>
                     <div className="print-area drop-shadow-2xl">
                         {/* Page 1 */}
                         <A4Page pageNumber={1} items={pages[0].items} sheetName={sheetName} mergeDirection={mergeDirection} isDragging={!!draggedId} draggedId={draggedId} dropTargetId={dropTargetId} onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop} groupingStrategy={groupingStrategy} />

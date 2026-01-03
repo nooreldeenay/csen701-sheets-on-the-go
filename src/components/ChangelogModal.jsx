@@ -12,7 +12,8 @@ const ChangelogModal = ({ isOpen, onClose }) => {
             changes: [
                 'Enhanced Tutorial & Lecture Knowledge Base',
                 'Added Arduino Nano RP2040 Connect Datasheet',
-                'Refined content density and formatting'
+                'Refined content density and formatting',
+                'Fixed PDF Page 1 rasterization issue'
             ]
         },
         {
