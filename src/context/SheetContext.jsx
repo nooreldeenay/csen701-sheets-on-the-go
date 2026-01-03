@@ -169,7 +169,8 @@ export const SheetProvider = ({ children }) => {
             title: 'Merged Row',
             type: 'row',
             content: itemsToGroup, // Array of sub-items
-            parentTitle: 'Custom'
+            parentTitle: 'Custom',
+            mergeDirection: mergeDirection // Store the direction at creation time
         };
 
         addCustomModule(newGroup);

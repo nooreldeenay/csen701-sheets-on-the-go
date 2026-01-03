@@ -70,10 +70,10 @@ const ModuleItem = ({ item, compact = false, mergeDirection = 'horizontal', isDr
                 )}
 
                 {item.type === 'row' && (
-                    <div className={mergeDirection === 'vertical' ? 'flex flex-col gap-2' : 'flex gap-2'}>
+                    <div className={(item.mergeDirection || mergeDirection) === 'vertical' ? 'flex flex-col gap-2' : 'flex gap-2'}>
                         {item.content.map((subItem, idx) => (
-                            <div key={idx} className={mergeDirection === 'vertical' ? 'w-full' : 'flex-1 min-w-0'}>
-                                <ModuleItem item={{ ...subItem, weight: item.weight }} compact={true} mergeDirection={mergeDirection} isDragging={isDragging} draggedId={draggedId} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} />
+                            <div key={idx} className={(item.mergeDirection || mergeDirection) === 'vertical' ? 'w-full' : 'flex-1 min-w-0'}>
+                                <ModuleItem item={{ ...subItem, weight: item.weight }} compact={true} mergeDirection={item.mergeDirection || mergeDirection} isDragging={isDragging} draggedId={draggedId} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} />
                             </div>
                         ))}
                     </div>
