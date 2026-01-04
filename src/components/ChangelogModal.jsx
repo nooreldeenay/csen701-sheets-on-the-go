@@ -7,6 +7,16 @@ const ChangelogModal = ({ isOpen, onClose }) => {
 
     const changelog = [
         {
+            version: '1.31',
+            date: '2026-01-04',
+            changes: [
+                'Added Modules: Lecture 3 (RP2040), Lecture 4 (Sensors I), Lecture 6 (Sensors II)',
+                'Optimized Typography: Added slashed-zero font for clearer digits',
+                'Refined Formula Notation: Improved precision/accuracy/mean math',
+                'Content Compression: Ultra-compact tableless definitions'
+            ]
+        },
+        {
             version: '1.3',
             date: '2026-01-03',
             changes: [

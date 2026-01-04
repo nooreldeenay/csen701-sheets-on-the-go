@@ -25,6 +25,7 @@ export const modules = [
             }
         ]
     },
+
     {
         id: 'tut3',
         title: 'Tutorial 3 - Sensors & Actuators I',
@@ -368,7 +369,7 @@ int main() {
                 id: 't9-i2c-packet',
                 title: 'I2C Packet Structure',
                 type: 'table',
-                content: "START|ADDR (7b)|R/W|ACK|DATA (8b)|ACK/NACK|STOP",
+                content: "START|ADDR (7b)|R=1/W=0|ACK|DATA (8b)|ACK/NACK|STOP",
                 parentTitle: 'Tutorial 9'
             },
             {
@@ -581,6 +582,66 @@ int main() {
 }
                 `.trim(),
                 parentTitle: 'Tutorial 10'
+            }
+        ]
+    },
+    {
+        id: 'lec3-rp2040',
+        title: 'Lecture 3 - The RP2040',
+        submodules: [
+            {
+                id: 'l3-overview',
+                title: 'RP2040 Overview',
+                type: 'text',
+                content: 'Name: RP-2-0-4-0: 2=Dual | 0=M0+ | 4=floor(log2(RAM/16k)) | 0=No Flash\nSpecs: Dual M0+ (AHB/APB) | 30 GPIO (4 ADC) | 264kB SRAM | SWD/JTAG',
+                parentTitle: 'Lecture 3'
+            }
+        ]
+    },
+    {
+        id: 'lec4-sensors',
+        title: 'Lecture 4 - Sensor Characteristics',
+        submodules: [
+            {
+                id: 'l4-prec-acc',
+                title: 'Precision & Accuracy',
+                type: 'formula',
+                content: 'Prec_n = 1 - \\frac{|Out_{n,actual} - \\overline{Out}|}{\\overline{Out}} \\quad \\overline{Out} = \\frac{1}{N} \\sum_{n=1}^{N} Out_{n,actual} \\quad Acc_n = 1 - \\frac{|Out_{n,ideal} - Out_{n,actual}|}{Out_{n,ideal}}',
+                parentTitle: 'Lecture 4'
+            },
+            {
+                id: 'l4-sens-err',
+                title: 'Sensitivity & Error',
+                type: 'formula',
+                content: '\\varepsilon_n = Out_{ideal} - Out_{actual} \\quad Sens = \\frac{\\Delta Output}{\\Delta Input}',
+                parentTitle: 'Lecture 4'
+            },
+            {
+                id: 'l4-response',
+                title: 'Response Characteristics',
+                type: 'text',
+                content: '• τ (Time Constant): Time to reach 63.2% of step change\n• Response Time = 5τ: Time to reach 99.3% of step change',
+                parentTitle: 'Lecture 4'
+            }
+        ]
+    },
+    {
+        id: 'lec6-stats',
+        title: 'Lecture 6 - Sensor Stats & ADC',
+        submodules: [
+            {
+                id: 'l6-formulas',
+                title: 'Mean & Variance',
+                type: 'formula',
+                content: '\\mu = \\bar{X} = \\frac{1}{N} \\sum_{n=1}^{N} X_{n,meas} \\quad \\sigma_x^2 = \\frac{1}{N} \\sum_{n=1}^{N} (X_n - \\bar{X})^2 \\quad \\sigma_x = \\sqrt{\\sigma_x^2}',
+                parentTitle: 'Lecture 6'
+            },
+            {
+                id: 'l6-graph-stats',
+                title: 'Graph Characteristics',
+                type: 'text',
+                content: '• Skewed Left/Right → Accuracy (Bias)\n• Curve Width (Std Dev) → Precision (Repeatability)\n• Large Std Dev → Noisy Sensor',
+                parentTitle: 'Lecture 6'
             }
         ]
     },

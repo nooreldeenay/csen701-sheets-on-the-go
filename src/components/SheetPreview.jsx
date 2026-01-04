@@ -51,7 +51,7 @@ const ModuleItem = ({ item, compact = false, mergeDirection = 'horizontal', isDr
 
             <div className="module-content overflow-hidden px-0.5" style={{ fontSize: `${fontSize}px` }}>
                 {item.type === 'text' && (
-                    <div className="whitespace-pre-wrap font-serif leading-tight text-slate-900" style={{ fontSize: '1em' }}>
+                    <div className="whitespace-pre-wrap font-sans slashed-zero leading-tight text-slate-900" style={{ fontSize: '1em' }}>
                         {item.content}
                     </div>
                 )}
